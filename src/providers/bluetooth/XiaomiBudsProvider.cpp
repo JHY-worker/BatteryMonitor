@@ -30,6 +30,123 @@ namespace
     // 厂商数据帧 / 服务数据帧的版本字节。
     constexpr uint8_t kAdvVersion = 0x01;
 
+    constexpr uint8_t kModelProtocolV1 = 1;
+    constexpr uint8_t kModelProtocolV2 = 2;
+
+    constexpr uint32_t modelKey(uint8_t protocol, uint8_t major, uint16_t minor)
+    {
+        return (static_cast<uint32_t>(protocol) << 24) |
+               (static_cast<uint32_t>(major) << 16) | minor;
+    }
+
+    // 同一零售型号通常对应多个地区 / 硬件变体，因此按完整 major/minor 查表。
+    const wchar_t *xiaomiModelName(uint8_t protocol, uint8_t major, uint16_t minor)
+    {
+        switch (modelKey(protocol, major, minor))
+        {
+        // —— V1：CompanyId 0x038F 厂商数据帧 ——
+        case modelKey(1, 0x07, 0x03): case modelKey(1, 0x07, 0x04):
+        case modelKey(1, 0x10, 0x04): case modelKey(1, 0x06, 0x07):
+            return L"Xiaomi Buds 3 Pro";
+        case modelKey(1, 0x09, 0x01): case modelKey(1, 0x09, 0x02):
+        case modelKey(1, 0x09, 0x03): case modelKey(1, 0x09, 0x04):
+            return L"Xiaomi Buds 3";
+        case modelKey(1, 0x04, 0x02): case modelKey(1, 0x06, 0x00):
+        case modelKey(1, 0x06, 0x01): case modelKey(1, 0x06, 0x02):
+        case modelKey(1, 0x06, 0x03):
+            return L"Redmi AirDots 3 Pro";
+        case modelKey(1, 0x10, 0x05): case modelKey(1, 0x10, 0x06):
+        case modelKey(1, 0x14, 0x07): case modelKey(1, 0x12, 0x00):
+        case modelKey(1, 0x12, 0x01): case modelKey(1, 0x12, 0x02):
+        case modelKey(1, 0x12, 0x03):
+            return L"Redmi Buds 4";
+        case modelKey(1, 0x13, 0x07):
+            return L"Redmi Buds 4 Harry Potter Edition";
+        case modelKey(1, 0x11, 0x04): case modelKey(1, 0x11, 0x05):
+        case modelKey(1, 0x11, 0x06): case modelKey(1, 0x11, 0x07):
+        case modelKey(1, 0x13, 0x06):
+            return L"Xiaomi Buds 4 Pro";
+        case modelKey(1, 0x10, 0x01): case modelKey(1, 0x10, 0x02):
+        case modelKey(1, 0x10, 0x03): case modelKey(1, 0x10, 0x07):
+        case modelKey(1, 0x11, 0x02):
+            return L"Redmi Buds 4 Pro";
+        case modelKey(1, 0x12, 0x04): case modelKey(1, 0x12, 0x05):
+        case modelKey(1, 0x12, 0x06): case modelKey(1, 0x12, 0x07):
+        case modelKey(1, 0x13, 0x05):
+            return L"Xiaomi Buds 4";
+
+        // —— V2：UUID 0xFD2D 服务数据帧 ——
+        case modelKey(2, 0x01, 0x00): case modelKey(2, 0x07, 0x00):
+            return L"FlipBuds Pro";
+        case modelKey(2, 0x01, 0x02): case modelKey(2, 0x01, 0x03):
+        case modelKey(2, 0x01, 0x0E):
+            return L"Redmi Buds 5";
+        case modelKey(2, 0x01, 0x04):
+            return L"Redmi Buds 5 AAPE";
+        case modelKey(2, 0x01, 0x05): case modelKey(2, 0x01, 0x06):
+        case modelKey(2, 0x01, 0x07):
+            return L"Redmi Buds 5 Pro";
+        case modelKey(2, 0x01, 0x0B):
+            return L"Redmi Buds 5 Pro Gaming";
+        case modelKey(2, 0x01, 0x15): case modelKey(2, 0x01, 0x16):
+        case modelKey(2, 0x01, 0x17): case modelKey(2, 0x01, 0x18):
+            return L"Xiaomi Buds 5";
+        case modelKey(2, 0x01, 0x1F): case modelKey(2, 0x02, 0x20):
+        case modelKey(2, 0x02, 0x21): case modelKey(2, 0x02, 0x22):
+            return L"Redmi Buds 6 Active";
+        case modelKey(2, 0x01, 0x19): case modelKey(2, 0x01, 0x1A):
+            return L"Xiaomi OpenWear Stereo";
+        case modelKey(2, 0x02, 0x27): case modelKey(2, 0x02, 0x28):
+        case modelKey(2, 0x02, 0x29):
+            return L"Redmi Buds 6 Lite";
+        case modelKey(2, 0x03, 0x31): case modelKey(2, 0x03, 0x32):
+        case modelKey(2, 0x03, 0x33):
+            return L"Redmi Buds 6S";
+        case modelKey(2, 0x03, 0x3A):
+            return L"Xiaomi Air 4 SE";
+        case modelKey(2, 0x03, 0x34): case modelKey(2, 0x03, 0x35):
+        case modelKey(2, 0x03, 0x36): case modelKey(2, 0x04, 0x56):
+            return L"REDMI Buds SE";
+        case modelKey(2, 0x03, 0x47): case modelKey(2, 0x03, 0x48):
+        case modelKey(2, 0x03, 0x49): case modelKey(2, 0x04, 0x5E):
+            return L"Redmi Buds 6 Pro";
+        case modelKey(2, 0x04, 0x57):
+            return L"Redmi Buds 6 Pro Gaming";
+        case modelKey(2, 0x03, 0x3D): case modelKey(2, 0x03, 0x3E):
+        case modelKey(2, 0x03, 0x3F):
+            return L"Redmi Buds 6";
+        case modelKey(2, 0x01, 0x25): case modelKey(2, 0x01, 0x26):
+        case modelKey(2, 0x01, 0x27):
+            return L"REDMI Buds 7S";
+        case modelKey(2, 0x03, 0x4D):
+            return L"Xiaomi Buds 5 Pro WiFi Edition";
+        case modelKey(2, 0x04, 0x54): case modelKey(2, 0x04, 0x55):
+            return L"Xiaomi Buds 5 Pro";
+        case modelKey(2, 0x01, 0x28): case modelKey(2, 0x01, 0x29):
+        case modelKey(2, 0x01, 0x2A):
+            return L"Xiaomi OpenWear Stereo Pro";
+        case modelKey(2, 0x01, 0x50): case modelKey(2, 0x01, 0x51):
+        case modelKey(2, 0x01, 0x52): case modelKey(2, 0x01, 0x56):
+            return L"Xiaomi Buds 6";
+        case modelKey(2, 0x01, 0x57): case modelKey(2, 0x01, 0x58):
+        case modelKey(2, 0x01, 0x59):
+            return L"REDMI Buds 8 Lite";
+        case modelKey(2, 0x01, 0x41): case modelKey(2, 0x01, 0x42):
+        case modelKey(2, 0x01, 0x43):
+            return L"REDMI Buds 8 Pro";
+        case modelKey(2, 0x01, 0x44):
+            return L"REDMI Buds 8 Pro Gaming (Black)";
+        case modelKey(2, 0x01, 0x62): case modelKey(2, 0x01, 0x63):
+        case modelKey(2, 0x01, 0x64):
+            return L"REDMI Buds 8";
+        case modelKey(2, 0x01, 0x48): case modelKey(2, 0x01, 0x49):
+        case modelKey(2, 0x01, 0x4B):
+            return L"REDMI Buds 8 Active";
+        default:
+            return nullptr;
+        }
+    }
+
     // 最近广播有效期。超过此时长未见广播的设备从快照中剔除。
     constexpr auto kStaleTimeout = std::chrono::seconds(35);
 
@@ -221,7 +338,7 @@ void XiaomiBudsProvider::onAdvertisementReceived(
         const auto adv = args.Advertisement();
 
         // —— 1) 厂商数据帧（CompanyId=0x038F）——
-        //   p[0]=len-2, p[1]=0x01, p[2]=产品型号, p[5]/[6]/[7]=左/右/盒电量。
+        //   p[0]=len-2, p[1]=0x01, p[2]=majorId，minorId=(p[3]>>1)&7。
         for (const auto &md : adv.ManufacturerData())
         {
             if (md.CompanyId() != kXiaomiCompanyId)
@@ -274,7 +391,9 @@ void XiaomiBudsProvider::onAdvertisementReceived(
                 d.leftCharging = leftCharging;
                 d.rightCharging = rightCharging;
                 d.caseCharging = caseCharging;
-                d.podType = p[2];
+                d.protocolVersion = kModelProtocolV1;
+                d.majorId = p[2];
+                d.minorId = static_cast<uint16_t>((p[3] >> 1) & 0x07);
                 std::memcpy(d.embeddedAddrA, addrA, 6);
                 std::memcpy(d.embeddedAddrB, addrB, 6);
                 d.hasEmbeddedAddr = true;
@@ -285,14 +404,15 @@ void XiaomiBudsProvider::onAdvertisementReceived(
                           (leftCharging ? L"%⚡" : L"%") + L" R=" +
                           std::to_wstring(right) + (rightCharging ? L"%⚡" : L"%") +
                           L" Case=" + std::to_wstring(casePct) +
-                          (caseCharging ? L"%⚡" : L"%") + L" pod=" +
-                          std::to_wstring(static_cast<int>(p[2])) + L" rssi=" +
+                          (caseCharging ? L"%⚡" : L"%") + L" model=v1:" +
+                          std::to_wstring(static_cast<int>(p[2])) + L"/" +
+                          std::to_wstring(static_cast<int>((p[3] >> 1) & 0x07)) + L" rssi=" +
                           std::to_wstring(rssi) + L"dBm");
             break; // 每个广播包只处理第一个小米厂商数据。
         }
 
         // —— 2) 服务数据帧（UUID=0xFD2D MAF）——
-        //   去掉 2 字节 UUID 后：p[0]=0x01, p[1]=产品型号,
+        //   去掉 2 字节 UUID 后：p[0]=0x01, p[1]=majorId, p[2..3]=LE16 minorId,
         //   p[12]/[13]/[14]=右/左/盒电量（左右与厂商数据帧相反）。
         for (const auto &section : adv.DataSections())
         {
@@ -336,7 +456,10 @@ void XiaomiBudsProvider::onAdvertisementReceived(
                 d.leftCharging = leftCharging;
                 d.rightCharging = rightCharging;
                 d.caseCharging = caseCharging;
-                d.podType = p[1];
+                d.protocolVersion = kModelProtocolV2;
+                d.majorId = p[1];
+                d.minorId = static_cast<uint16_t>(p[2]) |
+                            (static_cast<uint16_t>(p[3]) << 8);
                 d.rssi = rssi;
                 d.lastSeen = std::chrono::steady_clock::now();
             }
@@ -344,7 +467,10 @@ void XiaomiBudsProvider::onAdvertisementReceived(
                           (leftCharging ? L"%⚡" : L"%") + L" R=" +
                           std::to_wstring(right) + (rightCharging ? L"%⚡" : L"%") +
                           L" Case=" + std::to_wstring(casePct) +
-                          (caseCharging ? L"%⚡" : L"%") + L" rssi=" +
+                          (caseCharging ? L"%⚡" : L"%") + L" model=v2:" +
+                          std::to_wstring(static_cast<int>(p[1])) + L"/" +
+                          std::to_wstring(static_cast<int>(static_cast<uint16_t>(p[2]) |
+                              (static_cast<uint16_t>(p[3]) << 8))) + L" rssi=" +
                           std::to_wstring(rssi) + L"dBm");
             break;
         }
@@ -470,9 +596,20 @@ std::vector<BatteryDevice> XiaomiBudsProvider::readDevices()
         }
         if (name.empty())
         {
-            wchar_t buf[64] = {};
-            swprintf(buf, 64, L"Xiaomi Buds (0x%02X)", adv.podType);
-            name = buf;
+            if (const wchar_t *model = xiaomiModelName(
+                    adv.protocolVersion, adv.majorId, adv.minorId))
+            {
+                name = model;
+            }
+            else
+            {
+                wchar_t buf[80] = {};
+                swprintf(buf, 80, L"Xiaomi Buds (V%u %02X/%04X)",
+                         static_cast<unsigned>(adv.protocolVersion),
+                         static_cast<unsigned>(adv.majorId),
+                         static_cast<unsigned>(adv.minorId));
+                name = buf;
+            }
         }
 
         BatteryDevice device;
