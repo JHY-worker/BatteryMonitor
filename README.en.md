@@ -59,7 +59,7 @@ Note: AULA / AJAZZ wired USB keyboard bodies are not included in the current HID
 - Shows battery percentage or battery level
 - System tray support
 - Per-device tray visibility setting
-- Low battery notifications and notification policies
+- Opt-in low-battery notifications from the device list (off by default), with configurable thresholds and policies
 - Per-device alias
 - Stale battery cache for disconnected or temporarily unreadable devices
 - Option to hide unpaired AirPods / Beats / Xiaomi earbuds advertisements
@@ -119,11 +119,18 @@ You can also open `CMakeLists.txt` directly with Qt Creator.
 
 After launch, the main window shows the currently detected devices. Closing the window does not exit the app; it keeps running in the system tray. Use the tray menu to quit completely.
 
-Click a device to open its detail page and configure:
+The **Reminder** column in the device list provides a shortcut for enabling low-battery notifications. Notifications are off by default for new devices and are only sent after the checkbox is selected.
+
+The scope of a reminder setting depends on the device source:
+
+- HID, Xbox, regular Bluetooth, and other non-advertisement devices store the setting independently by device ID.
+- Advertisement-based Bluetooth devices such as AirPods / Beats and Xiaomi earbuds share the setting by model. For example, enabling reminders for AirPods 2 applies to every detected AirPods 2, but not AirPods 4. The setting therefore remains effective when an unpaired device rotates its advertisement MAC address.
+
+Double-click a device to open its detail page and configure:
 
 - Device alias
 - Whether to show it in the tray
-- Whether to enable low battery notifications
+- Whether to enable low battery notifications (off by default and synchronized with the list shortcut)
 - Low battery notification threshold
 - Low battery notification policy
 - Whether to keep the device cached forever

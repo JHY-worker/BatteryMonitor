@@ -100,7 +100,7 @@ bool DeviceSettings::alertEnabled(const QString &deviceId)
         return s.value(key, kDefaultAlertEnabled).toBool();
     }
     // 迁移：旧版本没有 AlertEnabled 键，那时用 threshold==0 表示“关闭”。
-    // 旧阈值缺失（全新设备）-> 默认启用；旧阈值存在且为 0 -> 视为关闭。
+    // 旧阈值存在时沿用旧语义；旧阈值缺失（全新设备）使用默认关闭。
     if (s.contains(prefixFor(deviceId) + kKeyLowBatteryThreshold)) {
         const int oldThreshold =
             s.value(prefixFor(deviceId) + kKeyLowBatteryThreshold,

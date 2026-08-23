@@ -449,14 +449,27 @@ QJsonObject RpcServer::buildAppSettingsObject() const
 
 QJsonObject RpcServer::buildDeviceSettingsObject(const QString &id) const
 {
+    const QString alertId = alertSettingsIdForDeviceId(id);
     QJsonObject r;
     r["alias"] = DeviceSettings::alias(id);
     r["trayVisible"] = DeviceSettings::trayVisible(id);
-    r["alertEnabled"] = DeviceSettings::alertEnabled(id);
-    r["lowBatteryThreshold"] = DeviceSettings::lowBatteryThreshold(id);
-    r["alertPolicy"] = DeviceSettings::policyToString(DeviceSettings::alertPolicy(id));
+    r["alertEnabled"] = DeviceSettings::alertEnabled(alertId);
+    r["lowBatteryThreshold"] = DeviceSettings::lowBatteryThreshold(alertId);
+    r["alertPolicy"] = DeviceSettings::policyToString(DeviceSettings::alertPolicy(alertId));
     r["keepCachedForever"] = DeviceSettings::keepCachedForever(id);
     return r;
+}
+
+QString RpcServer::alertSettingsIdForDeviceId(const QString &id) const
+{
+    for (const BatteryDevice &device : m_devices) {
+        if (QString::fromStdWString(device.id) == id) {
+            return device.alertGroupId.empty()
+                ? id
+                : QString::fromStdWString(device.alertGroupId);
+        }
+    }
+    return id;
 }
 
 QJsonObject RpcServer::methodSettingsAppGet(Session & /*s*/, const QJsonObject & /*params*/)
@@ -576,6 +589,7 @@ QJsonObject RpcServer::methodSettingsDeviceSet(Session & /*s*/, const QJsonObjec
         return JsonRpc::errorResponse(JsonRpc::ErrorCode::InvalidParams,
                                  QStringLiteral("Missing 'id'"), 0);
     }
+    const QString alertId = alertSettingsIdForDeviceId(id);
     if (params.contains(QStringLiteral("alias"))) {
         DeviceSettings::setAlias(id, params.value(QStringLiteral("alias")).toString());
     }
@@ -593,7 +607,7 @@ QJsonObject RpcServer::methodSettingsDeviceSet(Session & /*s*/, const QJsonObjec
             return JsonRpc::errorResponse(JsonRpc::ErrorCode::InvalidParams,
                                      QStringLiteral("Invalid alertEnabled"), 0);
         }
-        DeviceSettings::setAlertEnabled(id, v);
+        DeviceSettings::setAlertEnabled(alertId, v);
     }
     if (params.contains(QStringLiteral("lowBatteryThreshold"))) {
         int v;
@@ -605,7 +619,7 @@ QJsonObject RpcServer::methodSettingsDeviceSet(Session & /*s*/, const QJsonObjec
             return JsonRpc::errorResponse(JsonRpc::ErrorCode::InvalidParams,
                                      QStringLiteral("Invalid params"), 0, d);
         }
-        DeviceSettings::setLowBatteryThreshold(id, v);
+        DeviceSettings::setLowBatteryThreshold(alertId, v);
     }
     if (params.contains(QStringLiteral("alertPolicy"))) {
         const QString p = params.value(QStringLiteral("alertPolicy")).toString();
@@ -620,7 +634,7 @@ QJsonObject RpcServer::methodSettingsDeviceSet(Session & /*s*/, const QJsonObjec
             return JsonRpc::errorResponse(JsonRpc::ErrorCode::InvalidParams,
                                      QStringLiteral("Invalid params"), 0, d);
         }
-        DeviceSettings::setAlertPolicy(id, DeviceSettings::stringToPolicy(p));
+        DeviceSettings::setAlertPolicy(alertId, DeviceSettings::stringToPolicy(p));
     }
     if (params.contains(QStringLiteral("keepCachedForever"))) {
         bool v;

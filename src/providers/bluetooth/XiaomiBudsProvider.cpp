@@ -614,6 +614,10 @@ std::vector<BatteryDevice> XiaomiBudsProvider::readDevices()
 
         BatteryDevice device;
         device.id = L"xiaomibuds:" + std::to_wstring(canonicalAddress(addr, adv));
+        device.alertGroupId = L"broadcast:xiaomi_buds:model:" +
+                              std::to_wstring(adv.protocolVersion) + L":" +
+                              std::to_wstring(adv.majorId) + L":" +
+                              std::to_wstring(adv.minorId);
         device.name = name;
         device.type = BatteryDevice::Type::Bluetooth;
         device.subType = BatteryDevice::SubType::XiaomiBuds;

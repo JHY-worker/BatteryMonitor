@@ -101,6 +101,8 @@ private:
     // 不需要 Session 上下文的纯构造（供 set 后回读对账与 get 共用）。
     QJsonObject buildAppSettingsObject() const;
     QJsonObject buildDeviceSettingsObject(const QString &id) const;
+    // 将当前广播设备 id 映射到稳定型号分组；普通设备原样返回。
+    QString alertSettingsIdForDeviceId(const QString &id) const;
 
     // 推送 devices.updated 给所有订阅了该事件的连接。
     void broadcastDevicesUpdated();

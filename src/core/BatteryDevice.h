@@ -49,6 +49,11 @@ struct BatteryDevice
     //   Xbox: 使用 "XInput_<0..3>"，因为手柄没有稳定硬件序列号。
     std::wstring id;
 
+    // 低电量提醒设置的分组标识。普通设备留空，提醒设置按上面的设备 id 保存；
+    // BLE 广播设备填写稳定的“厂商 + 型号”标识，使会轮换 MAC 地址的同型号设备
+    // 共用提醒开关、阈值和策略。该字段只用于提醒偏好，不影响别名、托盘和历史。
+    std::wstring alertGroupId;
+
     // 用户可读的设备名称。
     std::wstring name;
 
@@ -113,7 +118,8 @@ using BatteryDeviceList = std::vector<BatteryDevice>;
 // 其余展示相关字段全部参与比较。
 inline bool sameDisplayContent(const BatteryDevice &a, const BatteryDevice &b)
 {
-    return a.id == b.id && a.name == b.name && a.type == b.type &&
+    return a.id == b.id && a.alertGroupId == b.alertGroupId &&
+           a.name == b.name && a.type == b.type &&
            a.subType == b.subType && a.percentage == b.percentage &&
            a.level == b.level && a.leftPercent == b.leftPercent &&
            a.rightPercent == b.rightPercent && a.casePercent == b.casePercent &&

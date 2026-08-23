@@ -484,7 +484,7 @@ Server 默认不主动推送。订阅后，设备列表发生变化（`BatteryMa
 
 ## 11. 按设备设置 `settings.device.*`
 
-对应 `util/DeviceSettings`（按设备 id 的 SHA-256 哈希键持久化）。
+对应 `util/DeviceSettings`（按设备 id 的 SHA-256 哈希键持久化；广播蓝牙的提醒字段按型号分组）。
 
 ### `settings.device.get`
 
@@ -500,7 +500,7 @@ Server 默认不主动推送。订阅后，设备列表发生变化（`BatteryMa
 {
   "alias": "",
   "trayVisible": true,
-  "alertEnabled": true,
+  "alertEnabled": false,
   "lowBatteryThreshold": 20,
   "alertPolicy": "once",
   "keepCachedForever": false
@@ -511,7 +511,7 @@ Server 默认不主动推送。订阅后，设备列表发生变化（`BatteryMa
 | ----------------------- | ------- | ---------- | ------------------------------------------------------------------- |
 | `alias`               | string  | `""`     | 用户自定义别名；空表示未设置                                        |
 | `trayVisible`         | boolean | `true`   | 是否显示到系统托盘                                                  |
-| `alertEnabled`        | boolean | `true`   | 是否启用低电量提醒                                                  |
+| `alertEnabled`        | boolean | `false`  | 是否启用低电量提醒；广播蓝牙按设备型号共享，其他设备按设备 ID 独立保存 |
 | `lowBatteryThreshold` | integer | `20`     | 触发提醒的电量上限（1–100）                                        |
 | `alertPolicy`         | string  | `"once"` | 提醒重复策略                                                        |
 | `keepCachedForever`   | boolean | `false`  | 掉线后是否以 stale 值永久保留（不受全局`staleRetentionSec` 约束） |

@@ -277,11 +277,12 @@ void AirPodsProvider::onAdvertisementReceived(
             reader.ReadBytes(winrt::array_view<uint8_t>(data));
 
             std::wstring name;
+            uint16_t modelId = 0;
             int left = -1, right = -1, casePct = -1;
             bool charging = false;
             bool leftCharging = false, rightCharging = false, caseCharging = false;
             if (!parseApplePayload(data.data(), data.size(),
-                                   name, left, right, casePct, charging,
+                                   name, modelId, left, right, casePct, charging,
                                    leftCharging, rightCharging, caseCharging))
             {
                 continue;
@@ -292,6 +293,7 @@ void AirPodsProvider::onAdvertisementReceived(
                 std::lock_guard<std::mutex> lock(m_mutex);
                 AdvDevice &d = m_devices[args.BluetoothAddress()];
                 d.name = name;
+                d.modelId = modelId;
                 d.leftPercent = left;
                 d.rightPercent = right;
                 d.casePercent = casePct;
@@ -321,7 +323,8 @@ void AirPodsProvider::onAdvertisementReceived(
 }
 
 bool AirPodsProvider::parseApplePayload(const uint8_t *data, std::size_t len,
-                                        std::wstring &modelName, int &left,
+                                        std::wstring &modelName, uint16_t &modelId,
+                                        int &left,
                                         int &right, int &casePct, bool &charging,
                                         bool &leftCharging, bool &rightCharging,
                                         bool &caseCharging)
@@ -334,7 +337,7 @@ bool AirPodsProvider::parseApplePayload(const uint8_t *data, std::size_t len,
     {
         return false; // 非 AirPods continuity 类型。
     }
-    const uint16_t modelId = static_cast<uint16_t>((data[4] << 8) | data[3]);
+    modelId = static_cast<uint16_t>((data[4] << 8) | data[3]);
     modelName = modelDisplayName(modelId);
 
     // 电量在字节 6、7 的 4-bit nibble：
@@ -409,6 +412,8 @@ std::vector<BatteryDevice> AirPodsProvider::readDevices()
 
         BatteryDevice device;
         device.id = L"airpods:" + std::to_wstring(addr);
+        device.alertGroupId = L"broadcast:airpods:model:" +
+                              std::to_wstring(adv.modelId);
         device.name = adv.name;
         device.type = BatteryDevice::Type::Bluetooth;
         device.subType = BatteryDevice::SubType::AirPods;

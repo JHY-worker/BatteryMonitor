@@ -484,7 +484,7 @@ Writable fields: `refreshIntervalMs`, `staleRetentionSec`, `language`, `theme`, 
 
 ## 11. Per-Device Settings `settings.device.*`
 
-Maps to `util/DeviceSettings` (persisted by SHA-256 hash of device id).
+Maps to `util/DeviceSettings` (persisted by SHA-256 hash of device id; alert fields for broadcast Bluetooth devices are grouped by model).
 
 ### `settings.device.get`
 
@@ -500,7 +500,7 @@ Maps to `util/DeviceSettings` (persisted by SHA-256 hash of device id).
 {
   "alias": "",
   "trayVisible": true,
-  "alertEnabled": true,
+  "alertEnabled": false,
   "lowBatteryThreshold": 20,
   "alertPolicy": "once",
   "keepCachedForever": false
@@ -511,7 +511,7 @@ Maps to `util/DeviceSettings` (persisted by SHA-256 hash of device id).
 | --- | --- | --- | --- |
 | `alias` | string | `""` | User-defined alias; empty = not set |
 | `trayVisible` | boolean | `true` | Whether to show in system tray |
-| `alertEnabled` | boolean | `true` | Whether low-battery alert is enabled |
+| `alertEnabled` | boolean | `false` | Whether low-battery alert is enabled; shared by model for broadcast Bluetooth devices, otherwise stored per device ID |
 | `lowBatteryThreshold` | integer | `20` | Upper battery percentage threshold for triggering alerts (1–100) |
 | `alertPolicy` | string | `"once"` | Alert repeat policy |
 | `keepCachedForever` | boolean | `false` | Whether to keep the device as stale indefinitely after going offline (bypasses global `staleRetentionSec`) |

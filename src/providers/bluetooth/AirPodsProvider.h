@@ -44,6 +44,7 @@ private:
     struct AdvDevice
     {
         std::wstring name;
+        uint16_t modelId = 0;
         int leftPercent = -1;
         int rightPercent = -1;
         int casePercent = -1;
@@ -64,7 +65,8 @@ private:
 
     // 解析 Apple 厂商数据 payload，成功返回 true 并填充各电量 / 充电字段。
     static bool parseApplePayload(const uint8_t *data, std::size_t len,
-                                  std::wstring &modelName, int &left, int &right,
+                                  std::wstring &modelName, uint16_t &modelId,
+                                  int &left, int &right,
                                   int &casePct, bool &charging, bool &leftCharging,
                                   bool &rightCharging, bool &caseCharging);
 

@@ -493,6 +493,16 @@ QLabel *makeSectionLabel(const QString &text)
     label->setContentsMargins(6, 6, 0, 0);
     return label;
 }
+
+// 普通设备按稳定设备 id 保存提醒偏好；广播耳机按 provider 给出的型号分组保存。
+// 后者不能依赖 BLE 地址，因为未配对设备可能每次广播都换一个随机地址。
+QString alertSettingsId(const BatteryDevice &device)
+{
+    if (!device.alertGroupId.empty()) {
+        return QString::fromStdWString(device.alertGroupId);
+    }
+    return QString::fromStdWString(device.id);
+}
 } // namespace
 
 MainWindow::MainWindow(BatteryManager *manager, BatteryHistoryStore *historyStore,
@@ -504,19 +514,23 @@ MainWindow::MainWindow(BatteryManager *manager, BatteryHistoryStore *historyStor
 {
     ui->setupUi(this);
     setupPages();
-    setMinimumSize(600, 420);
+    // 增加“提醒”列后需要更宽的可用区域；expandedTo 也会把旧版保存的窄窗口
+    // 自动扩到新下限，避免最右侧复选框被裁切。
+    setMinimumSize(820, 420);
     const QSize savedWindowSize = AppSettings::windowSize();
     resize(savedWindowSize.isValid()
                ? savedWindowSize.expandedTo(minimumSize())
-               : QSize(760, 560));
+               : QSize(860, 560));
 
     // 表格基础外观。
-    ui->deviceTable->setColumnCount(4);
+    ui->deviceTable->setColumnCount(5);
     ui->deviceTable->horizontalHeader()->setStretchLastSection(false);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    ui->deviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
+    ui->deviceTable->setColumnWidth(4, 76);
     ui->deviceTable->verticalHeader()->setDefaultSectionSize(56);
     ui->deviceTable->setShowGrid(false);
     ui->deviceTable->setAlternatingRowColors(false);
@@ -1338,7 +1352,24 @@ void MainWindow::onDeviceAlertEnabledChanged(bool checked)
     if (m_currentDetailId.isEmpty()) {
         return;
     }
-    DeviceSettings::setAlertEnabled(m_currentDetailId, checked);
+    QString settingsId = m_currentDetailId;
+    for (const BatteryDevice &device : std::as_const(m_devices)) {
+        if (QString::fromStdWString(device.id) == m_currentDetailId) {
+            settingsId = alertSettingsId(device);
+            break;
+        }
+    }
+    DeviceSettings::setAlertEnabled(settingsId, checked);
+    // 详情页与列表页共用同一设置，返回列表前也立即同步现有快捷复选框。
+    const auto checks = ui->deviceTable->findChildren<QCheckBox *>(
+        QStringLiteral("tableAlertCheck"));
+    for (QCheckBox *check : checks) {
+        if (check->property("alertSettingsId").toString() == settingsId &&
+            check->isChecked() != checked) {
+            const QSignalBlocker blocker(check);
+            check->setChecked(checked);
+        }
+    }
     // 关闭提醒后阈值框 + 策略下拉框灰显；开启后可继续编辑。
     if (m_deviceThresholdSpin) {
         m_deviceThresholdSpin->setEnabled(checked);
@@ -1358,7 +1389,14 @@ void MainWindow::onDeviceThresholdChanged(int value)
     if (m_currentDetailId.isEmpty()) {
         return;
     }
-    DeviceSettings::setLowBatteryThreshold(m_currentDetailId, value);
+    QString settingsId = m_currentDetailId;
+    for (const BatteryDevice &device : std::as_const(m_devices)) {
+        if (QString::fromStdWString(device.id) == m_currentDetailId) {
+            settingsId = alertSettingsId(device);
+            break;
+        }
+    }
+    DeviceSettings::setLowBatteryThreshold(settingsId, value);
     // 不能在这里 m_lowBatteryNotified.remove(id)！
     // notifyLowBattery 内部已会基于最新阈值重新判断：
     //   - 调高后仍低于阈值：设备在 m_lowBatteryNotified 里，不会重复提醒；
@@ -1379,10 +1417,17 @@ void MainWindow::onDeviceAlertPolicyChanged(int index)
         return;
     }
     const auto policy = static_cast<AlertPolicy>(data.toInt());
-    DeviceSettings::setAlertPolicy(m_currentDetailId, policy);
+    QString settingsId = m_currentDetailId;
+    for (const BatteryDevice &device : std::as_const(m_devices)) {
+        if (QString::fromStdWString(device.id) == m_currentDetailId) {
+            settingsId = alertSettingsId(device);
+            break;
+        }
+    }
+    DeviceSettings::setAlertPolicy(settingsId, policy);
     // 切换策略时清掉该设备的“上次提醒时间”，避免新策略受旧时间戳误伤：
     //   例如从 Every5Min 切回 Once 时，旧时间戳不应再被任何分支使用。
-    m_lastAlertTime.remove(m_currentDetailId);
+    m_lastAlertTime.remove(settingsId);
     notifyLowBattery(m_devices);
 }
 
@@ -1814,14 +1859,15 @@ void MainWindow::refreshDetailPage()
         m_deviceAliasEdit->setText(DeviceSettings::alias(id));
         m_deviceAliasEdit->setPlaceholderText(name.isEmpty() ? tr("Unknown device") : name);
         m_deviceTrayCheck->setChecked(DeviceSettings::trayVisible(id));
-        const bool alertOn = DeviceSettings::alertEnabled(id);
+        const QString alertId = alertSettingsId(device);
+        const bool alertOn = DeviceSettings::alertEnabled(alertId);
         m_deviceAlertCheck->setChecked(alertOn);
-        m_deviceThresholdSpin->setValue(DeviceSettings::lowBatteryThreshold(id));
+        m_deviceThresholdSpin->setValue(DeviceSettings::lowBatteryThreshold(alertId));
         // 复选框未勾选时阈值框 + 策略下拉框一并灰显（提醒都关了，策略也无意义）。
         m_deviceThresholdSpin->setEnabled(alertOn);
         m_deviceAlertPolicyCombo->setEnabled(alertOn);
         // 找到 itemData 等于当前策略的下标。
-        const auto currentPolicy = static_cast<int>(DeviceSettings::alertPolicy(id));
+        const auto currentPolicy = static_cast<int>(DeviceSettings::alertPolicy(alertId));
         int policyIndex = 0;
         for (int i = 0; i < m_deviceAlertPolicyCombo->count(); ++i) {
             if (m_deviceAlertPolicyCombo->itemData(i).toInt() == currentPolicy) {
@@ -1962,11 +2008,12 @@ void MainWindow::rebuildTable(const QList<BatteryDevice> &devices)
         placeholder->setTextAlignment(Qt::AlignCenter);
         const QColor muted(160, 160, 160);
         placeholder->setForeground(muted);
-        table->setSpan(0, 0, 1, 4);
+        table->setSpan(0, 0, 1, 5);
         table->setItem(0, 0, placeholder);
         table->setItem(0, 1, new QTableWidgetItem());
         table->setItem(0, 2, new QTableWidgetItem());
         table->setItem(0, 3, new QTableWidgetItem());
+        table->setItem(0, 4, new QTableWidgetItem());
         return;
     }
 
@@ -2039,11 +2086,45 @@ void MainWindow::rebuildTable(const QList<BatteryDevice> &devices)
             statusItem->setForeground(muted);
         }
         table->setItem(row, 3, statusItem);
+
+        // 列表页快捷提醒开关。广播设备使用型号分组 id，因此同型号的多个随机
+        // MAC 行会同步勾选；普通蓝牙、HID、Xbox 仍各自独立。
+        const QString alertId = alertSettingsId(device);
+        auto *alertCheck = new QCheckBox();
+        alertCheck->setObjectName(QStringLiteral("tableAlertCheck"));
+        alertCheck->setProperty("alertSettingsId", alertId);
+        alertCheck->setChecked(DeviceSettings::alertEnabled(alertId));
+        if (!device.alertGroupId.empty()) {
+            alertCheck->setToolTip(
+                tr("Broadcast devices of the same model share this setting."));
+        }
+        auto *alertCell = new QWidget();
+        auto *alertLayout = new QHBoxLayout(alertCell);
+        alertLayout->setContentsMargins(8, 0, 8, 0);
+        alertLayout->setAlignment(Qt::AlignCenter);
+        alertLayout->addWidget(alertCheck);
+        table->setCellWidget(row, 4, alertCell);
+        connect(alertCheck, &QCheckBox::toggled, this,
+                [this, table, alertId](bool checked) {
+            DeviceSettings::setAlertEnabled(alertId, checked);
+            // 同一广播型号可能同时显示为多行，立即同步所有对应复选框。
+            const auto checks = table->findChildren<QCheckBox *>(
+                QStringLiteral("tableAlertCheck"));
+            for (QCheckBox *other : checks) {
+                if (other->property("alertSettingsId").toString() == alertId &&
+                    other->isChecked() != checked) {
+                    const QSignalBlocker blocker(other);
+                    other->setChecked(checked);
+                }
+            }
+            notifyLowBattery(m_devices);
+        });
     }
 
     table->resizeColumnsToContents();
     table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+    table->setColumnWidth(4, 76);
 }
 
 void MainWindow::updateTray(const QList<BatteryDevice> &devices)
@@ -2101,13 +2182,13 @@ void MainWindow::notifyLowBattery(const QList<BatteryDevice> &devices)
         if (device.stale) {
             continue;
         }
-        const QString id = QString::fromStdWString(device.id);
-        if (!DeviceSettings::alertEnabled(id)) {
+        const QString alertId = alertSettingsId(device);
+        if (!DeviceSettings::alertEnabled(alertId)) {
             continue;
         }
-        const int threshold = DeviceSettings::lowBatteryThreshold(id);
+        const int threshold = DeviceSettings::lowBatteryThreshold(alertId);
         if (isAtOrBelowThreshold(device, threshold)) {
-            currentLow.insert(id);
+            currentLow.insert(alertId);
         }
     }
 
@@ -2131,34 +2212,39 @@ void MainWindow::notifyLowBattery(const QList<BatteryDevice> &devices)
 
     // —— 第三步：对仍处于低电量的设备，按各自策略决定是否弹通知 ——
     for (const auto &device : devices) {
-        const QString id = QString::fromStdWString(device.id);
-        if (!currentLow.contains(id)) {
+        const QString alertId = alertSettingsId(device);
+        if (!currentLow.contains(alertId)) {
             continue;
         }
         // stale 设备已在第一步被排除出 currentLow；防御性再判一次。
         if (device.stale) {
             continue;
         }
-        const AlertPolicy policy = DeviceSettings::alertPolicy(id);
+        // 同型号广播设备共用 alertId，但只应为其中真正低于阈值的那一台展示通知。
+        if (!isAtOrBelowThreshold(
+                device, DeviceSettings::lowBatteryThreshold(alertId))) {
+            continue;
+        }
+        const AlertPolicy policy = DeviceSettings::alertPolicy(alertId);
         const int intervalSec = policyIntervalSec(policy);
 
         // 策略分流：判断“本次是否应该提醒”。
         bool shouldNotify = false;
         if (intervalSec < 0) {
             // Once：首次跌破阈值时提醒一次，记录在 set 里，回升前不再响。
-            if (!m_lowBatteryNotified.contains(id)) {
+            if (!m_lowBatteryNotified.contains(alertId)) {
                 shouldNotify = true;
-                m_lowBatteryNotified.insert(id);
+                m_lowBatteryNotified.insert(alertId);
             }
         } else {
             // Always（0）/ 周期（>0）：基于“上次提醒时刻”节流。
             const QDateTime now = QDateTime::currentDateTime();
-            const auto it = m_lastAlertTime.constFind(id);
+            const auto it = m_lastAlertTime.constFind(alertId);
             const bool due = (it == m_lastAlertTime.constEnd())
                 || (it.value().secsTo(now) >= intervalSec);
             if (due) {
                 shouldNotify = true;
-                m_lastAlertTime.insert(id, now);
+                m_lastAlertTime.insert(alertId, now);
             }
         }
 

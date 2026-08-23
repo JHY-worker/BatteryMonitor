@@ -31,6 +31,14 @@
         <translation>状态</translation>
     </message>
     <message>
+        <source>Reminder</source>
+        <translation>提醒</translation>
+    </message>
+    <message>
+        <source>Broadcast devices of the same model share this setting.</source>
+        <translation>同型号的广播蓝牙设备共用此设置。</translation>
+    </message>
+    <message>
         <location filename="../mainwindow.cpp" line="1013"/>
         <source>5 seconds</source>
         <translation>5 秒</translation>
