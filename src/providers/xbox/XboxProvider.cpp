@@ -1,4 +1,5 @@
 #include "XboxProvider.h"
+#include "FlydigiControllerReader.h"
 #include "util/Logger.h"
 
 #include <algorithm>
@@ -153,6 +154,14 @@ void readRawGameControllers(std::vector<BatteryDevice> &devices,
         if (name.empty()) {
             name = L"Xbox Controller";
         }
+        std::wstring lowerName = name;
+        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::towlower);
+        if (lowerName.find(L"flydigi") != std::wstring::npos ||
+            lowerName.find(L"direwolf") != std::wstring::npos ||
+            lowerName.find(L"vader") != std::wstring::npos ||
+            lowerName.find(L"apex") != std::wstring::npos) {
+            continue;
+        }
 
         BatteryDevice device;
         device.id = id;
@@ -247,7 +256,9 @@ std::wstring XboxProvider::displayName() const
 
 std::vector<BatteryDevice> XboxProvider::readDevices()
 {
-    std::vector<BatteryDevice> devices;
+    // 优先采用 Flydigi 适配结果，并跳过对应的泛化 XInput 占位。
+    std::vector<BatteryDevice> devices = readFlydigiControllerDevices();
+    size_t flydigiXInputSlots = devices.size();
     // filled 记录已精确命中的设备 ID（RawGameController / 设备属性键路径），
     // 用于在 XInput 兜底时去重——精确百分比优先于离散档位。
     std::set<std::wstring> filled;
@@ -276,6 +287,13 @@ std::vector<BatteryDevice> XboxProvider::readDevices()
         XINPUT_BATTERY_INFORMATION batteryInfo{};
         if (XInputGetBatteryInformation(userIndex, BATTERY_DEVTYPE_GAMEPAD, &batteryInfo)
             != ERROR_SUCCESS) {
+            continue;
+        }
+
+        if (flydigiXInputSlots > 0 && batteryInfo.BatteryType == BATTERY_TYPE_WIRED) {
+            --flydigiXInputSlots;
+            LOG_VERBOSE_W(L"[Xbox] suppressed XInput wired placeholder for Flydigi slot " +
+                          std::to_wstring(userIndex));
             continue;
         }
 

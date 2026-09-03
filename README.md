@@ -10,45 +10,52 @@ BatteryMonitor 是一个 Windows 桌面电量监控工具，用来在一个窗�
 
 项目基于 Qt 6 / CMake 开发，通过多个 Provider 分别读取蓝牙、Xbox 和 HID 2.4G 接收器设备的电量，并在界面中统一展示。
 
+## 注意事项
+
+> Flydigi 手柄需要先安装飞智官方软件及其驱动。读取电量时只需确保 `SpaceStationService` 服务正在运行，不需要打开飞智官方软件。
+
+
 ## 已验证设备
 
 目前验证过的设备只有：
 
-| 设备类型                               | PID/VID                                          | 是否验证 |
-| -------------------------------------- | ------------------------------------------------ | -------- |
-| 普通蓝牙设备                           | 无固定 USB VID/PID，走 Windows 蓝牙设备信息      | 已验证   |
-| AULA F87ProV2D + AULA F87ProV2D Dongle | VID`0x0C45` / PID `0xFEFE`                   | 已验证   |
-| AJAZZ MK87PRO + HS USB Dongle          | VID`0x0C45` / PID `0xFEFC`                   | 已验证   |
-| ATK V75X + ATK V75X Dongle            | VID`0x320F` / PID `0x5055`（USB），PID `0x5088`（Dongle） | 已验证   |
-| VGN DragonFly F2 Pro Max + Dongle     | VGN MouseEnc 协议族，VID/PID 以设备实际上报为准  | 已验证   |
-| AirPods 2                              | Apple Company ID`0x004C` / Model ID `0x200F` | 已验证   |
-| Xbox 手柄                              | VID`0x045E`，PID 依具体型号而定                | 已验证   |
-| Razer Basilisk X HyperSpeed + Dongle   | VID`0x1532` / PID `0x0083`                   | 已验证   |
-| Razer BlackWidow V4 Mini HyperSpeed (Wireless) | VID`0x1532` / PID `0x02BA`                   | 已验证   |
-| ROG Strix Scope RX TKL Wireless Deluxe + Dongle | VID`0x0B05` / PID `0x1A07`                | 已验证   |
-| ROG Keris Wireless AimPoint                    | VID`0x0B05` / PID `0x1A66`（有线）或 `0x1A68`（2.4G） | 已验证   |
-| Logitech MX Master 4 + Bolt 接收器       | VID`0x046D` / PID `0xC548`，HID++ 2.0 `0x1004` | 已验证   |
-| Razer Mouse Dock Pro + Razer Basilisk V3 Pro 35K (Wireless) | VID`0x1532` / PID `0x00A4` (底座) + PID `0x00CD` (鼠标) | 已验证 |
-| MCHOSE A7 V2 Pro（有线）                | VID`0x3837` / PID `0x4018`，支持精确电量和充电状态 | 已验证 |
-| Redmi Buds 5 Pro                        | 小米 BLE 广播（CompanyId `0x038F` / Service UUID `0xFD2D`），左/右/盒三路电量 | 已验证 |
+| 设备类型                                                    | PID/VID                                                                          | 是否验证 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
+| 普通蓝牙设备                                                | 无固定 USB VID/PID，走 Windows 蓝牙设备信息                                      | 已验证   |
+| AULA F87ProV2D + AULA F87ProV2D Dongle                      | VID`0x0C45` / PID `0xFEFE`                                                   | 已验证   |
+| AJAZZ MK87PRO + HS USB Dongle                               | VID`0x0C45` / PID `0xFEFC`                                                   | 已验证   |
+| ATK V75X + ATK V75X Dongle                                  | VID`0x320F` / PID `0x5055`（USB），PID `0x5088`（Dongle）                  | 已验证   |
+| VGN DragonFly F2 Pro Max + Dongle                          | VGN MouseEnc 协议族，VID/PID 以设备实际上报为准                                  | 已验证   |
+| AirPods 2                                                   | Apple Company ID`0x004C` / Model ID `0x200F`                                 | 已验证   |
+| Xbox 手柄                                                   | VID`0x045E`，PID 依具体型号而定                                                | 已验证   |
+| Flydigi Direwolf 4（无线/XInput）                           | 服务上报 VID`0x045E` / PID `0x028E`，型号代码 `fp4`                        | 已验证   |
+| Razer Basilisk X HyperSpeed + Dongle                        | VID`0x1532` / PID `0x0083`                                                   | 已验证   |
+| Razer BlackWidow V4 Mini HyperSpeed (Wireless)              | VID`0x1532` / PID `0x02BA`                                                   | 已验证   |
+| ROG Strix Scope RX TKL Wireless Deluxe + Dongle             | VID`0x0B05` / PID `0x1A07`                                                   | 已验证   |
+| ROG Keris Wireless AimPoint                                 | VID`0x0B05` / PID `0x1A66`（有线）或 `0x1A68`（2.4G）                      | 已验证   |
+| Logitech MX Master 4 + Bolt 接收器                          | VID`0x046D` / PID `0xC548`，HID++ 2.0 `0x1004`                             | 已验证   |
+| Razer Mouse Dock Pro + Razer Basilisk V3 Pro 35K (Wireless) | VID`0x1532` / PID `0x00A4` (底座) + PID `0x00CD` (鼠标)                    | 已验证   |
+| MCHOSE A7 V2 Pro（有线）                                    | VID`0x3837` / PID `0x4018`，支持精确电量和充电状态                           | 已验证   |
+| Redmi Buds 5 Pro                                            | 小米 BLE 广播（CompanyId`0x038F` / Service UUID `0xFD2D`），左/右/盒三路电量 | 已验证   |
 
 ## 理论支持设备
 
 除上述已验证设备外，代码中也包含一些同品牌、同协议族或同 VID/PID 范围内设备的适配逻辑。这些设备属于理论支持范围，但尚未在作者环境中实际验证。
 
-| 设备类型                             | PID/VID                                          | 是否验证         |
-| ------------------------------------ | ------------------------------------------------ | ---------------- |
-| AULA / AJAZZ 2.4G 接收器设备         | VID`0x0C45`，仅启用 2.4G dongle PID 白名单     | 理论支持，未验证 |
-| VGN / 关联品牌 2.4G 接收器键盘、鼠标 | 多个 VID/PID，代码内置协议族和部分 VID 兜底匹配  | 理论支持，未验证 |
-| Razer 鼠标 / 键盘                    | VID`0x1532`，代码内置 PID 表                   | 理论支持，未验证 |
-| ASUS ROG / TUF 鼠标                  | VID`0x0B05`；Chakram、Gladius、Harpe、Keris、Pugio、Spatha、Strix、TUF 等型号，代码内置 PID 表 | 理论支持，未验证 |
-| Logitech HID++ 2.0 接收器设备        | Bolt / Unifying / Nano / Lightspeed；电池 Feature `0x1004` / `0x1000` / `0x1001` | 理论支持，未验证 |
-| MCHOSE A7 V2 系列鼠标                 | 有线 VID`0x3837` / PID `0x4018`、`0x4019`、`0x4021`、`0x4023`；1K/8K Dongle PID `0x100A` / `0x100B`；8K MagDock VID`0x5253` / PID `0x1020` | 部分验证 |
-| AirPods / Beats 系列                 | Apple Company ID`0x004C`，代码内置 Model ID 表 | 理论支持，未验证 |
-| 小米 / Redmi Buds 系列耳机           | 小米 BLE 广播（CompanyId `0x038F` / Service UUID `0xFD2D`），已验证 Redmi Buds 5 Pro，其它型号理论支持 | 部分验证 |
-| Xbox / XInput / Windows 游戏控制器   | Microsoft VID`0x045E` 或 Windows 控制器接口    | 理论支持，未验证 |
-| 标准 BLE 电量服务设备                | BLE GATT Battery Service，无固定 USB VID/PID     | 理论支持，未验证 |
-| 经典蓝牙音频设备                     | Windows BTHENUM 设备属性，无固定 USB VID/PID     | 理论支持，未验证 |
+| 设备类型                             | PID/VID                                                                                                                                                      | 是否验证         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| AULA / AJAZZ 2.4G 接收器设备         | VID`0x0C45`，仅启用 2.4G dongle PID 白名单                                                                                                                 | 理论支持，未验证 |
+| VGN / 关联品牌 2.4G 接收器键盘、鼠标 | 多个 VID/PID，代码内置协议族和部分 VID 兜底匹配                                                                                                              | 理论支持，未验证 |
+| Razer 鼠标 / 键盘                    | VID`0x1532`，代码内置 PID 表                                                                                                                               | 理论支持，未验证 |
+| ASUS ROG / TUF 鼠标                  | VID`0x0B05`；Chakram、Gladius、Harpe、Keris、Pugio、Spatha、Strix、TUF 等型号，代码内置 PID 表                                                             | 理论支持，未验证 |
+| Logitech HID++ 2.0 接收器设备        | Bolt / Unifying / Nano / Lightspeed；电池 Feature`0x1004` / `0x1000` / `0x1001`                                                                        | 理论支持，未验证 |
+| MCHOSE A7 V2 系列鼠标                | 有线 VID`0x3837` / PID `0x4018`、`0x4019`、`0x4021`、`0x4023`；1K/8K Dongle PID `0x100A` / `0x100B`；8K MagDock VID`0x5253` / PID `0x1020` | 部分验证         |
+| AirPods / Beats 系列                 | Apple Company ID`0x004C`，代码内置 Model ID 表                                                                                                             | 理论支持，未验证 |
+| 小米 / Redmi Buds 系列耳机           | 小米 BLE 广播（CompanyId`0x038F` / Service UUID `0xFD2D`），已验证 Redmi Buds 5 Pro，其它型号理论支持                                                    | 部分验证         |
+| Xbox / XInput / Windows 游戏控制器   | Microsoft VID`0x045E` 或 Windows 控制器接口                                                                                                                | 理论支持，未验证 |
+| Flydigi 手柄系列                     | 可被 `SpaceStationService` 识别并上报的 Apex、Vader、Direwolf 等型号；Direwolf 4 已验证                                                                    | 部分验证         |
+| 标准 BLE 电量服务设备                | BLE GATT Battery Service，无固定 USB VID/PID                                                                                                                 | 理论支持，未验证 |
+| 经典蓝牙音频设备                     | Windows BTHENUM 设备属性，无固定 USB VID/PID                                                                                                                 | 理论支持，未验证 |
 
 如果你的设备能被识别并正常读取电量，欢迎提交设备型号和测试结果，后续可以补充到已验证设备列表。
 
@@ -78,7 +85,7 @@ BatteryMonitor 是一个 Windows 桌面电量监控工具，用来在一个窗�
 - `ClassicBluetoothProvider`：读取经典蓝牙设备的 Windows 设备属性电量
 - `AirPodsProvider`：解析 Apple Continuity BLE 广播，读取 AirPods / Beats 左耳、右耳、充电盒电量
 - `XiaomiBudsProvider`：解析小米 BLE 广播，读取小米 / Redmi Buds 系列耳机左耳、右耳、充电盒电量
-- `XboxProvider`：通过 XInput、RawGameController 和 Windows 设备属性读取 Xbox 手柄电量
+- `XboxProvider`：通过 XInput、RawGameController 和 Windows 设备属性读取 Xbox 手柄电量；通过飞智空间站 `fcs.sock` 本地 IPC 读取 Flydigi XInput 兼容手柄的真实电量
 - `AulaHidProvider`：通过 hidapi 读取 AULA 2.4G 接收器设备电量
 - `AsusRogHidProvider`：通过 hidapi 读取 ROG Strix Scope RX TKL Wireless Deluxe 接收器设备电量和充电状态
 - `AsusMouseHidProvider`：通过 hidapi 读取 ASUS ROG / TUF 鼠标的电量和充电状态

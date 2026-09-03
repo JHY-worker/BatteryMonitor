@@ -5,6 +5,7 @@
 // Xbox 手柄电量提供者：多路径读取手柄电量。
 //
 // 路径：
+//   0. Flydigi 适配：读取 XInput 兼容手柄的真实电量，并抑制对应的泛化占位。
 //   1. XInput（基线）：4 个手柄槽位的离散电量状态（满 / 中 / 低 / 空），
 //      按原样映射到 BatteryLevel，无精确百分比。ID 形如 "XInput_<n>"。
 //   2. RawGameController（增强，精确百分比）：遍历 Windows.Gaming.Input 的

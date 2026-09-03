@@ -10,6 +10,10 @@ BatteryMonitor is a Windows desktop battery monitor for common wireless peripher
 
 The project is built with Qt 6 and CMake. It uses multiple providers to read battery information from Bluetooth devices, Xbox controllers, and HID 2.4G dongles, then presents them through a unified UI.
 
+## Important Notes
+
+> Flydigi controllers require the official Flydigi software and its drivers to be installed. Battery readings only require the `SpaceStationService` service to be running; the official Flydigi application does not need to be open.
+
 ## Verified Devices
 
 Only the following devices have been tested so far:
@@ -23,6 +27,7 @@ Only the following devices have been tested so far:
 | VGN DragonFly F2 Pro Max + Dongle       | VGN MouseEnc protocol family; actual VID/PID depends on the device report | Verified            |
 | AirPods 2                               | Apple Company ID`0x004C` / Model ID `0x200F`                          | Verified            |
 | Xbox controller                         | VID`0x045E`; PID depends on the exact model                             | Verified            |
+| Flydigi Direwolf 4 (wireless/XInput)    | Service-reported VID`0x045E` / PID `0x028E`, model code `fp4`           | Verified            |
 | Razer Basilisk X HyperSpeed + Dongle    | VID`0x1532` / PID `0x0083`                                            | Verified            |
 | Razer BlackWidow V4 Mini HyperSpeed (Wireless) | VID`0x1532` / PID `0x02BA`                                            | Verified            |
 | ROG Strix Scope RX TKL Wireless Deluxe + Dongle | VID`0x0B05` / PID `0x1A07`                                         | Verified            |
@@ -47,6 +52,7 @@ Besides the verified devices above, the code also contains adapter logic for som
 | AirPods / Beats series                             | Apple Company ID`0x004C`, built-in Model ID table                                   | Theoretical, unverified |
 | Xiaomi / Redmi Buds series earbuds                 | Xiaomi BLE beacon (CompanyId `0x038F` / Service UUID `0xFD2D`); Redmi Buds 5 Pro verified, other models theoretical | Partially verified |
 | Xbox / XInput / Windows game controllers           | Microsoft VID`0x045E` or Windows controller interfaces                              | Theoretical, unverified |
+| Flydigi controller series                          | Apex, Vader, Direwolf, and other models recognized and reported by `SpaceStationService`; Direwolf 4 verified | Partially verified |
 | Standard BLE Battery Service devices               | BLE GATT Battery Service, no fixed USB VID/PID                                        | Theoretical, unverified |
 | Classic Bluetooth audio devices                    | Windows BTHENUM device property, no fixed USB VID/PID                                 | Theoretical, unverified |
 
@@ -78,7 +84,7 @@ The project is split into several providers by device source:
 - `ClassicBluetoothProvider`: reads classic Bluetooth device battery from Windows device properties
 - `AirPodsProvider`: parses Apple Continuity BLE advertisements for AirPods / Beats left, right, and case battery levels
 - `XiaomiBudsProvider`: parses Xiaomi BLE advertisements for Xiaomi / Redmi Buds left, right, and case battery levels
-- `XboxProvider`: reads Xbox controller battery through XInput, RawGameController, and Windows device properties
+- `XboxProvider`: reads Xbox controller battery through XInput, RawGameController, and Windows device properties; reads the real battery level of Flydigi XInput-compatible controllers through the Flydigi Space Station `fcs.sock` local IPC
 - `AulaHidProvider`: reads AULA 2.4G dongle device battery through hidapi
 - `AsusRogHidProvider`: reads battery level and charging state from the ROG Strix Scope RX TKL Wireless Deluxe dongle through hidapi
 - `AsusMouseHidProvider`: reads battery level and charging state from ASUS ROG / TUF mice through hidapi

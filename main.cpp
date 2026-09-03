@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
     //   AirPodsProvider           —— AirPods/Beats（Apple Continuity 广播）。
     //   XiaomiBudsProvider        —— 小米/Redmi Buds 系列耳机（小米私有
     //                                BLE 广播，左/右/盒三路电量）。
-    //   XboxProvider              —— XInput / RawGameController 手柄。
+    //   XboxProvider              —— XInput / RawGameController / Flydigi 手柄。
     //   AulaHidProvider           —— AULA 等 2.4G 接收器（HID Output/Input Report）。
     //   AsusRogHidProvider        —— ROG Strix Scope RX TKL 无线键盘接收器。
     //   AsusMouseHidProvider      —— ASUS ROG / TUF 鼠标。
