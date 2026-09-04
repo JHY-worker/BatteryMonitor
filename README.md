@@ -64,6 +64,7 @@ BatteryMonitor 是一个 Windows 桌面电量监控工具，用来在一个窗�
 ## 功能
 
 - 查看设备电量百分比或电量档位
+- 查看电脑（笔记本）电池电量百分比和充放电功率
 - 支持系统托盘显示
 - 支持按设备设置是否显示到托盘
 - 支持在设备列表中按需勾选低电量提醒（默认关闭），并可配置提醒阈值和策略
@@ -86,6 +87,7 @@ BatteryMonitor 是一个 Windows 桌面电量监控工具，用来在一个窗�
 - `AirPodsProvider`：解析 Apple Continuity BLE 广播，读取 AirPods / Beats 左耳、右耳、充电盒电量
 - `XiaomiBudsProvider`：解析小米 BLE 广播，读取小米 / Redmi Buds 系列耳机左耳、右耳、充电盒电量
 - `XboxProvider`：通过 XInput、RawGameController 和 Windows 设备属性读取 Xbox 手柄电量；通过飞智空间站 `fcs.sock` 本地 IPC 读取 Flydigi XInput 兼容手柄的真实电量
+- `SystemBatteryProvider`：通过 WinRT 聚合电池读取本机（笔记本）电池电量百分比和充放电功率，读不到时回退 `GetSystemPowerStatus`；无电池的台式机不显示
 - `AulaHidProvider`：通过 hidapi 读取 AULA 2.4G 接收器设备电量
 - `AsusRogHidProvider`：通过 hidapi 读取 ROG Strix Scope RX TKL Wireless Deluxe 接收器设备电量和充电状态
 - `AsusMouseHidProvider`：通过 hidapi 读取 ASUS ROG / TUF 鼠标的电量和充电状态
@@ -153,6 +155,7 @@ bin/BatteryMonitor.exe
 - 开机自启
 - 掉线缓存保留时长
 - 是否隐藏未配对耳机广播（AirPods / 小米耳机）
+- 是否显示系统电池（电脑电池，默认开启）
 - WebSocket 服务开关、监听端口、监听地址、鉴权令牌
 - 电量历史保留时长（默认 30 天，可选永久保留）
 
@@ -202,6 +205,7 @@ BatteryMonitor 内置一个 WebSocket JSON-RPC 2.0 服务，默认关闭。开�
 ├── src/providers/bluetooth          # 蓝牙 / AirPods Provider
 ├── src/providers/hid                # AULA / ASUS / Logitech / MCHOSE / VGN / Razer HID Provider
 ├── src/providers/xbox               # Xbox Provider
+├── src/providers/system             # 本机（笔记本）电池 Provider
 ├── src/rpc                          # WebSocket JSON-RPC 服务
 ├── src/scripting                    # QuickJS 沙箱、HID 桥接与 JS 插件加载
 ├── plugins                          # 随构建复制的 JS 设备插件

@@ -126,6 +126,7 @@ std::wstring BatteryManager::deviceSignature(const BatteryDevice &d)
        << (d.caseCharging ? 1 : 0) << L'|'
        << (d.paired ? 1 : 0) << L'|'
        << (d.wired ? 1 : 0) << L'|'
+       << (d.externalPower ? 1 : 0) << L'|'
        << (d.connected ? 1 : 0) << L'|'
        << (d.stale ? 1 : 0);
     return ss.str();
@@ -210,6 +211,13 @@ void BatteryManager::applyStickyCache(std::vector<BatteryDevice> &raw,
         if (AppSettings::hideUnpairedAirPods()
             && isThreeChannelAudio(it.value().subType)
             && !it.value().paired) {
+            it = m_cache.erase(it);
+            continue;
+        }
+        // 「显示系统电池」关闭后，历史缓存行也不再以 stale 形式补回
+        // （优先于「永久缓存」偏好，全局开关必须立即生效）。
+        if (!AppSettings::showSystemBattery()
+            && it.value().type == BatteryDevice::Type::System) {
             it = m_cache.erase(it);
             continue;
         }
@@ -335,6 +343,15 @@ void BatteryManager::publishCurrentDevices(const QSet<std::wstring> &freshIds)
     }
 
     filterUnpairedAirPods(raw);
+
+    // 设置页关闭「显示系统电池」时整体隐藏本机电池。放在粘性缓存合并前，
+    // 这样设备不会进入缓存；applyStickyCache 也会同步清掉历史缓存行。
+    if (!AppSettings::showSystemBattery()) {
+        raw.erase(std::remove_if(raw.begin(), raw.end(),
+            [](const BatteryDevice &d) {
+                return d.type == BatteryDevice::Type::System;
+            }), raw.end());
+    }
 
     // 与粘性缓存合并：刚返回的 provider 读到的设备刷新时间戳；
     // 当前聚合快照里没有的旧设备按保留窗口以 stale=true 补回。
@@ -519,6 +536,8 @@ QString BatteryManager::typeLabel(BatteryDevice::Type type)
         return QStringLiteral("Xbox");
     case BatteryDevice::Type::Hid:
         return QStringLiteral("HID");
+    case BatteryDevice::Type::System:
+        return QStringLiteral("System");
     }
     return QStringLiteral("Unknown");
 }

@@ -15,6 +15,7 @@ constexpr auto kKeyLanguage = "Language";
 constexpr auto kKeyTheme = "Theme";
 constexpr auto kKeyStaleRetentionSec = "StaleRetentionSec";
 constexpr auto kKeyHideUnpairedAirPods = "HideUnpairedAirPods";
+constexpr auto kKeyShowSystemBattery = "ShowSystemBattery";
 constexpr auto kKeyAirPodsRssiThreshold = "AirPodsRssiThreshold";
 constexpr auto kKeyXiaomiBudsRssiThreshold = "XiaomiBudsRssiThreshold";
 constexpr auto kKeyHistoryRetentionDays = "HistoryRetentionDays";
@@ -25,6 +26,7 @@ const QString kDefaultLanguage = QString();      // 空 = 跟随系统
 const QString kDefaultTheme = QStringLiteral("system");
 constexpr int kDefaultStaleRetentionSec = 180;   // 3 分钟
 constexpr bool kDefaultHideUnpairedAirPods = false;
+constexpr bool kDefaultShowSystemBattery = true;
 constexpr int kDefaultHistoryRetentionDays = 30;
 
 // —— JS 插件 ——
@@ -102,6 +104,17 @@ bool AppSettings::hideUnpairedAirPods()
 void AppSettings::setHideUnpairedAirPods(bool hide)
 {
     QSettings().setValue(kKeyHideUnpairedAirPods, hide);
+}
+
+bool AppSettings::showSystemBattery()
+{
+    return QSettings().value(kKeyShowSystemBattery,
+                             kDefaultShowSystemBattery).toBool();
+}
+
+void AppSettings::setShowSystemBattery(bool show)
+{
+    QSettings().setValue(kKeyShowSystemBattery, show);
 }
 
 int AppSettings::airPodsRssiThreshold()

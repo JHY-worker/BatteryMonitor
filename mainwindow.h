@@ -76,6 +76,7 @@ private slots:
     void onStaleRetentionChanged(int index);
     // 设置页「隐藏未配对 AirPods」复选框被切换。
     void onHideUnpairedAirPodsChanged(bool checked);
+    void onShowSystemBatteryChanged(bool checked);
     // 设置页「AirPods / 小米耳机 RSSI 阈值」数值被修改。
     void onAirPodsRssiChanged(int value);
     void onXiaomiBudsRssiChanged(int value);
@@ -158,11 +159,13 @@ private:
     QLabel *m_detailTypeRowTitle = nullptr;
     QLabel *m_detailStatusRowTitle = nullptr;
     QLabel *m_detailBatteryRowTitle = nullptr;
+    QLabel *m_detailPowerRowTitle = nullptr;
     QLabel *m_detailWiredRowTitle = nullptr;
     QLabel *m_detailIdRowTitle = nullptr;
     QLabel *m_detailTypeValue = nullptr;
     QLabel *m_detailStateValue = nullptr;
     QLabel *m_detailBatteryValue = nullptr;
+    QLabel *m_detailPowerValue = nullptr;
     QLabel *m_detailWiredValue = nullptr;
     QLabel *m_detailIdValue = nullptr;
     QFrame *m_airPodsGroup = nullptr;
@@ -215,6 +218,7 @@ private:
     QLabel *m_startupRowTitle = nullptr;
     QLabel *m_staleRetentionRowTitle = nullptr;
     QLabel *m_hideUnpairedAirPodsRowTitle = nullptr;
+    QLabel *m_showSystemBatteryRowTitle = nullptr;
     QLabel *m_airPodsRssiRowTitle = nullptr;
     QLabel *m_xiaomiBudsRssiRowTitle = nullptr;
     QLabel *m_historyRetentionRowTitle = nullptr;
@@ -228,6 +232,7 @@ private:
     QComboBox *m_staleRetentionCombo = nullptr;
     QCheckBox *m_startupCheck = nullptr;
     QCheckBox *m_hideUnpairedAirPodsCheck = nullptr;
+    QCheckBox *m_showSystemBatteryCheck = nullptr;
     QSpinBox *m_airPodsRssiSpin = nullptr;
     QSpinBox *m_xiaomiBudsRssiSpin = nullptr;
     QComboBox *m_historyRetentionCombo = nullptr;

@@ -79,6 +79,8 @@ set(APP_PROVIDER_FILES
     src/providers/xbox/XboxProvider.h
     src/providers/xbox/FlydigiControllerReader.cpp
     src/providers/xbox/FlydigiControllerReader.h
+    src/providers/system/SystemBatteryProvider.cpp
+    src/providers/system/SystemBatteryProvider.h
     src/providers/hid/AulaHidProvider.cpp
     src/providers/hid/AulaHidProvider.h
     src/providers/hid/AsusRogHidProvider.cpp

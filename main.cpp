@@ -13,6 +13,7 @@
 #include "src/providers/hid/AulaHidProvider.h"
 #include "src/providers/hid/VgnHidProvider.h"
 #include "src/providers/xbox/XboxProvider.h"
+#include "src/providers/system/SystemBatteryProvider.h"
 #include "src/rpc/RpcServer.h"
 #include "src/scripting/JsPluginLoader.h"
 #include "util/AppSettings.h"
@@ -255,6 +256,8 @@ int main(int argc, char *argv[])
     //   XiaomiBudsProvider        —— 小米/Redmi Buds 系列耳机（小米私有
     //                                BLE 广播，左/右/盒三路电量）。
     //   XboxProvider              —— XInput / RawGameController / Flydigi 手柄。
+    //   SystemBatteryProvider     —— 本机（笔记本电脑）电池：百分比 + 充放电功率，
+    //                                WinRT 聚合电池读取，无电池时静默无设备。
     //   AulaHidProvider           —— AULA 等 2.4G 接收器（HID Output/Input Report）。
     //   AsusRogHidProvider        —— ROG Strix Scope RX TKL 无线键盘接收器。
     //   AsusMouseHidProvider      —— ASUS ROG / TUF 鼠标。
@@ -265,6 +268,8 @@ int main(int argc, char *argv[])
     //                                按协议族分派（ThreeMode / Weisheng / Beiying /
     //                                VgnRyMouse / Yongjiaxin / VgnLdMs / Arbit / VgnKc2）。
     BatteryManager manager;
+    // 本机电池放在最前注册，列表首行固定显示电脑电池。
+    manager.addProvider(std::make_unique<SystemBatteryProvider>());
     manager.addProvider(std::make_unique<BluetoothProvider>());
     manager.addProvider(std::make_unique<ClassicBluetoothProvider>());
     manager.addProvider(std::make_unique<AirPodsProvider>());

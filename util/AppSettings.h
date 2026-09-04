@@ -17,6 +17,8 @@
 //                         沿用上次读数继续展示的保留窗口；0 = 从不缓存。
 //   - HideUnpairedAirPods : bool，默认 false。隐藏 BLE 广播中未与本机配对的
 //                           AirPods / Beats。
+//   - ShowSystemBattery : bool，默认 true。是否在设备列表 / 托盘中显示
+//                         本机（笔记本）电池。
 //   - AirPodsRssiThreshold / XiaomiBudsRssiThreshold : int dBm，默认 -70。
 //                           耳机 BLE 广播的信号强度下限，低于即丢弃；两家分开设置。
 //   - HistoryRetentionDays : int，默认 30；0 表示永久保留历史。
@@ -51,6 +53,11 @@ public:
     // true = 只显示与本机已配对的 Apple 音频设备；false = 显示附近所有可解析广播。
     static bool hideUnpairedAirPods();
     static void setHideUnpairedAirPods(bool hide);
+
+    // —— 本机电池显示开关 ——
+    // true（默认）= 显示电脑电池行；false = 整体隐藏（列表 / 托盘 / 历史 / RPC）。
+    static bool showSystemBattery();
+    static void setShowSystemBattery(bool show);
 
     // —— 耳机广播 RSSI 阈值（dBm，负值）——
     // 低于该值的 BLE 广播视为信号太弱直接丢弃；AirPods 与小米耳机分开设置。

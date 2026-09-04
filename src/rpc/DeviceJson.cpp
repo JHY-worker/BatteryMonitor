@@ -40,10 +40,15 @@ QJsonObject toJson(const BatteryDevice &device)
     o["rightCharging"] = device.rightCharging;
     o["caseCharging"] = device.caseCharging;
     o["paired"] = device.paired;
+    // 本机电池的瞬时充放电功率（mW，正 = 放电，负 = 充电，0 = 未知/空闲）。
+    // 仅 System 设备有意义；进 signature 使订阅端拿到实时功率变化。
+    o["rateMilliwatts"] = device.rateMilliwatts;
     // 广播类设备的信号强度（dBm）；0 = 未上报，序列化为 null。
     // 刻意不进 signature()：逐轮波动会破坏变化去重。
     o["rssi"] = device.rssi < 0 ? QJsonValue(device.rssi) : QJsonValue::Null;
     o["wired"] = device.wired;
+    // 本机电池是否接入外部电源（交流适配器）；其余类型恒为 false。
+    o["externalPower"] = device.externalPower;
     o["connected"] = device.connected;
     o["stale"] = device.stale;
     o["lastSeen"] = device.lastSeenMsecs;
@@ -67,7 +72,8 @@ QString signature(const BatteryDevice &device)
 {
     // 仅纳入"客户端可见且会影响展示/判断"的字段。
     // 刻意排除 lastSeenMsecs（每轮都变，会破坏去重）。
-    return QString("%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11|%12|%13|%14|%15|%16|%17")
+    // 含 rateMilliwatts：订阅端（StreamDock 等）需要实时感知功率变化。
+    return QString("%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11|%12|%13|%14|%15|%16|%17|%18|%19")
         .arg(QString::fromStdWString(device.id))
         .arg(QString::fromStdWString(device.name))
         .arg(static_cast<int>(device.type))
@@ -84,7 +90,9 @@ QString signature(const BatteryDevice &device)
         .arg(device.stale ? 1 : 0)
         .arg(device.leftCharging ? 1 : 0)
         .arg(device.rightCharging ? 1 : 0)
-        .arg(device.caseCharging ? 1 : 0);
+        .arg(device.caseCharging ? 1 : 0)
+        .arg(device.rateMilliwatts)
+        .arg(device.externalPower ? 1 : 0);
 }
 
 QString levelToString(BatteryLevel level)
@@ -102,10 +110,11 @@ QString levelToString(BatteryLevel level)
 QString typeToString(BatteryDevice::Type type)
 {
     switch (type) {
-    case BatteryDevice::Type::Xbox: return QStringLiteral("xbox");
-    case BatteryDevice::Type::Hid:  return QStringLiteral("hid");
+    case BatteryDevice::Type::Xbox:  return QStringLiteral("xbox");
+    case BatteryDevice::Type::Hid:   return QStringLiteral("hid");
+    case BatteryDevice::Type::System: return QStringLiteral("system");
     case BatteryDevice::Type::Bluetooth:
-    default:                        return QStringLiteral("bluetooth");
+    default:                         return QStringLiteral("bluetooth");
     }
 }
 

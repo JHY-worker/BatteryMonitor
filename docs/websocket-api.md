@@ -116,7 +116,7 @@ Server **默认关闭**，可通过以下任一方式启用：
 | `name`         | string       | 设备原始可读名（来自系统 / 厂商）。                                                                                                                 |
 | `alias`        | string       | 用户自定义别名（来自`DeviceSettings`，空串表示未设置）。                                                                                          |
 | `displayName`  | string       | 实际展示名 =`alias` 非空 ? `alias` : `name`。                                                                                                 |
-| `type`         | string       | 设备类别：`"bluetooth"` \| `"xbox"` \| `"hid"`                                                                                                |
+| `type`         | string       | 设备类别：`"bluetooth"` \| `"xbox"` \| `"hid"` \| `"system"`（本机电池）                                                                     |
 | `subType`      | string       | 子类别：`"generic"` \| `"airpods"` \| `"xiaomi_buds"`                                                                                           |
 | `percentage`   | number\|null | 精确电量`0-100`；`null` 表示无精确值（如 Xbox 离散档位），此时应回退到 `level`。AirPods 取左/右/盒三者最低值。                                |
 | `level`        | string       | **始终填充**的离散档位，用于着色 / 排序 / 提醒：`"unknown"` \| `"empty"` \| `"low"` \| `"medium"` \| `"full"`                       |
@@ -127,9 +127,11 @@ Server **默认关闭**，可通过以下任一方式启用：
 | `leftCharging` | boolean      | 左耳是否正在充电。仅 `subType=="airpods"` / `"xiaomi_buds"` 有意义。                                                                            |
 | `rightCharging`| boolean      | 右耳是否正在充电。                                                                                                                              |
 | `caseCharging` | boolean      | 充电盒是否正在充电。                                                                                                                            |
+| `rateMilliwatts` | integer   | 本机电池（`type=="system"`）的瞬时充放电功率，单位毫瓦：正值 = 放电，负值 = 充电，`0` = 未知或空闲。其余类型恒为 `0`。                              |
 | `paired`       | boolean      | 是否已与本机配对。普通设备恒为`true`；AirPods/Beats 广播未配对时为 `false`。                                                                    |
 | `rssi`         | number\|null | 最近一次广播的信号强度（dBm，负值）。仅广播类设备（`airpods` / `xiaomi_buds`）有值；`null` 表示未上报。逐轮波动，不参与变更去重。                |
 | `wired`        | boolean      | 是否接有线电源（如 Xbox 接 USB 时无电池）。                                                                                                         |
+| `externalPower` | boolean     | 本机电池（`type=="system"`）是否接入外部电源（交流适配器）。其余类型恒为 `false`。                                                                    |
 | `connected`    | boolean      | 设备当前是否在线。                                                                                                                                  |
 | `stale`        | boolean      | 当前展示值是否来自**粘性缓存**（本轮未读到该设备，沿用上次读数）。UI 据此标灰。                                                               |
 | `lastSeen`     | integer      | 上次成功读到该设备的 Unix 毫秒时间戳（epoch ms）。                                                                                                  |

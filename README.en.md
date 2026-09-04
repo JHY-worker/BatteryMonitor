@@ -63,6 +63,7 @@ Note: AULA / AJAZZ wired USB keyboard bodies are not included in the current HID
 ## Features
 
 - Shows battery percentage or battery level
+- Shows the PC (laptop) battery percentage and charge/discharge power
 - System tray support
 - Per-device tray visibility setting
 - Opt-in low-battery notifications from the device list (off by default), with configurable thresholds and policies
@@ -85,6 +86,7 @@ The project is split into several providers by device source:
 - `AirPodsProvider`: parses Apple Continuity BLE advertisements for AirPods / Beats left, right, and case battery levels
 - `XiaomiBudsProvider`: parses Xiaomi BLE advertisements for Xiaomi / Redmi Buds left, right, and case battery levels
 - `XboxProvider`: reads Xbox controller battery through XInput, RawGameController, and Windows device properties; reads the real battery level of Flydigi XInput-compatible controllers through the Flydigi Space Station `fcs.sock` local IPC
+- `SystemBatteryProvider`: reads the built-in (laptop) battery percentage and charge/discharge power through the WinRT aggregate battery, falling back to `GetSystemPowerStatus`; hidden on desktops without a battery
 - `AulaHidProvider`: reads AULA 2.4G dongle device battery through hidapi
 - `AsusRogHidProvider`: reads battery level and charging state from the ROG Strix Scope RX TKL Wireless Deluxe dongle through hidapi
 - `AsusMouseHidProvider`: reads battery level and charging state from ASUS ROG / TUF mice through hidapi
@@ -153,6 +155,7 @@ The settings page allows configuring:
 - Start with Windows
 - Stale cache retention time
 - Whether to hide unpaired earbuds advertisements (AirPods / Xiaomi)
+- Whether to show the system (PC) battery, on by default
 - WebSocket service toggle, listen port, bind address, and authentication token
 - Battery history retention (30 days by default, with a permanent option)
 
@@ -204,6 +207,7 @@ Companion StreamDock plugin: [JKWTCN/BatteryMonitorDock](https://github.com/JKWT
 ├── src/providers/bluetooth          # Bluetooth / AirPods providers
 ├── src/providers/hid                # AULA / ASUS / Logitech / MCHOSE / VGN / Razer HID providers
 ├── src/providers/xbox               # Xbox provider
+├── src/providers/system             # Built-in PC battery provider
 ├── src/rpc                          # WebSocket JSON-RPC server
 ├── src/scripting                    # QuickJS sandbox, HID bridge, and JavaScript plugin loader
 ├── plugins                          # JavaScript device plugins copied during the build

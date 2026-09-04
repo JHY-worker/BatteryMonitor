@@ -28,7 +28,9 @@ struct BatteryDevice
         Bluetooth,
         Xbox,
         // USB / 2.4G 接收器走 HID 协议的设备（AULA 键盘 / 鼠标等）。
-        Hid
+        Hid,
+        // 本机（笔记本电脑）电池。历史库以 int 保存该枚举，只能在末尾追加。
+        System
     };
 
     // 设备子类别。用于区分同 Type 下的不同展示形态：
@@ -88,6 +90,13 @@ struct BatteryDevice
     // 普通设备默认 true；只有广播类 provider 会填实际匹配结果。
     bool paired = true;
 
+    // —— 充放电功率（目前仅本机电池 SystemBatteryProvider 填写）——
+    // 电池瞬时充放电功率，单位毫瓦。正值 = 放电，负值 = 充电，
+    // 0 表示未知或空闲（部分电池驱动不上报速率）。仅用于展示和 RPC，
+    // 不参与档位 / 低电量提醒 / 历史入库。provider 侧已四舍五入到 100 mW，
+    // 避免逐轮微小波动触发不必要的界面重建。
+    int rateMilliwatts = 0;
+
     // 最近一次收到广播的信号强度（dBm，负值）。仅广播类 provider 填写；
     // 0 表示未上报。逐轮波动，刻意不参与 sameDisplayContent（见其说明）。
     int rssi = 0;
@@ -95,6 +104,12 @@ struct BatteryDevice
     // Windows / 设备协议是否报告为有线供电。该标记可以和有效电量同时存在：
     // 部分兼容 XInput 的 2.4 GHz dongle 会伪装成 USB 有线手柄，同时上报电量。
     bool wired = false;
+
+    // —— 本机电池专用（SystemBatteryProvider 填写）——
+    // 是否接入外部电源（交流适配器）。与 wired 语义不同：接入电源不代表
+    // 电池失去展示意义（满电插电时电量照常显示），不能借用 wired，
+    // 否则 UI 会把设备按「有线供电」整行隐藏。
+    bool externalPower = false;
 
     // 设备当前是否在线。
     bool connected = false;
@@ -125,7 +140,8 @@ inline bool sameDisplayContent(const BatteryDevice &a, const BatteryDevice &b)
            a.rightPercent == b.rightPercent && a.casePercent == b.casePercent &&
            a.charging == b.charging && a.leftCharging == b.leftCharging &&
            a.rightCharging == b.rightCharging && a.caseCharging == b.caseCharging &&
-           a.paired == b.paired && a.wired == b.wired &&
+           a.paired == b.paired && a.rateMilliwatts == b.rateMilliwatts &&
+           a.externalPower == b.externalPower && a.wired == b.wired &&
            a.connected == b.connected && a.stale == b.stale;
 }
 

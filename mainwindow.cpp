@@ -139,6 +139,16 @@ QString batteryText(const BatteryDevice &device)
     return levelText(device.level);
 }
 
+// 本机电池的充放电功率数值文本（绝对值，1 位小数，如 "45.3"）。
+// 未知或空闲（rateMilliwatts == 0）返回空串；方向由充电标志 / 符号位另行判断。
+QString wattsNumberText(const BatteryDevice &device)
+{
+    if (device.rateMilliwatts == 0) {
+        return QString();
+    }
+    return QString::number(qAbs(device.rateMilliwatts) / 1000.0, 'f', 1);
+}
+
 // 状态列文本。
 QString statusText(const BatteryDevice &device)
 {
@@ -154,6 +164,21 @@ QString statusText(const BatteryDevice &device)
     }
     if (!device.connected) {
         return MainWindow::tr("Disconnected");
+    }
+    // 本机电池：状态列附带充放电功率。方向优先看符号位（正 = 放电，
+    // 负 = 充电），个别驱动不带速率时回退充电标志。
+    if (device.type == BatteryDevice::Type::System) {
+        const QString watts = wattsNumberText(device);
+        if (!watts.isEmpty()) {
+            if (device.charging || device.rateMilliwatts < 0) {
+                return MainWindow::tr("Charging (%1 W)").arg(watts);
+            }
+            return MainWindow::tr("Discharging (%1 W)").arg(watts);
+        }
+        // 插电但未在充电（如已充满）：明确标注交流供电，避免误以为异常。
+        if (device.externalPower && !device.charging) {
+            return MainWindow::tr("On AC power");
+        }
     }
     if (device.charging) {
         // 三路电量设备标明正在充电的部位（字母与 Case 单词，无需额外翻译），
@@ -693,11 +718,14 @@ void MainWindow::setupPages()
     m_detailTypeValue = makeValueLabel();
     m_detailStateValue = makeValueLabel();
     m_detailBatteryValue = makeValueLabel();
+    m_detailPowerValue = makeValueLabel();
     m_detailWiredValue = makeValueLabel();
     m_detailIdValue = makeValueLabel();
     m_detailTypeRowTitle = addInfoRow(overviewLayout, tr("Type"), m_detailTypeValue);
     m_detailStatusRowTitle = addInfoRow(overviewLayout, tr("Status"), m_detailStateValue);
     m_detailBatteryRowTitle = addInfoRow(overviewLayout, tr("Battery"), m_detailBatteryValue);
+    // 充放电功率行只对本机电池（System 类型）显示，refreshDetailPage 控制可见性。
+    m_detailPowerRowTitle = addInfoRow(overviewLayout, tr("Power"), m_detailPowerValue);
     m_detailWiredRowTitle = addInfoRow(overviewLayout, tr("Wired"), m_detailWiredValue);
     m_detailIdRowTitle = addInfoRow(overviewLayout, tr("Device ID"), m_detailIdValue);
     detailLayout->addWidget(overviewGroup);
@@ -845,6 +873,7 @@ void MainWindow::setupPages()
     m_startupRowTitle = new QLabel(tr("Start with Windows"));
     m_staleRetentionRowTitle = new QLabel(tr("Stale retention"));
     m_hideUnpairedAirPodsRowTitle = new QLabel(tr("Hide unpaired earbuds"));
+    m_showSystemBatteryRowTitle = new QLabel(tr("Show system battery"));
     m_airPodsRssiRowTitle = new QLabel(tr("AirPods RSSI threshold"));
     m_xiaomiBudsRssiRowTitle = new QLabel(tr("XiaomiBuds RSSI threshold"));
     m_historyRetentionRowTitle = new QLabel(tr("History retention"));
@@ -869,6 +898,8 @@ void MainWindow::setupPages()
     m_startupCheck->setObjectName(QStringLiteral("startupCheck"));
     m_hideUnpairedAirPodsCheck = new QCheckBox();
     m_hideUnpairedAirPodsCheck->setObjectName(QStringLiteral("hideUnpairedAirPodsCheck"));
+    m_showSystemBatteryCheck = new QCheckBox();
+    m_showSystemBatteryCheck->setObjectName(QStringLiteral("showSystemBatteryCheck"));
     // 耳机广播 RSSI 阈值（dBm）：低于该值的广播视为信号太弱直接丢弃。
     m_airPodsRssiSpin = new QSpinBox();
     m_airPodsRssiSpin->setObjectName(QStringLiteral("settingsCombo"));
@@ -889,6 +920,7 @@ void MainWindow::setupPages()
     addInfoRow(settingsGroupLayout, m_themeRowTitle, m_themeCombo);
     addInfoRow(settingsGroupLayout, m_staleRetentionRowTitle, m_staleRetentionCombo);
     addInfoRow(settingsGroupLayout, m_hideUnpairedAirPodsRowTitle, m_hideUnpairedAirPodsCheck);
+    addInfoRow(settingsGroupLayout, m_showSystemBatteryRowTitle, m_showSystemBatteryCheck);
     addInfoRow(settingsGroupLayout, m_airPodsRssiRowTitle, m_airPodsRssiSpin);
     addInfoRow(settingsGroupLayout, m_xiaomiBudsRssiRowTitle, m_xiaomiBudsRssiSpin);
     addInfoRow(settingsGroupLayout, m_historyRetentionRowTitle, m_historyRetentionCombo);
@@ -1056,6 +1088,8 @@ void MainWindow::setupConnections()
             this, &MainWindow::onStaleRetentionChanged);
     connect(m_hideUnpairedAirPodsCheck, &QCheckBox::toggled,
             this, &MainWindow::onHideUnpairedAirPodsChanged);
+    connect(m_showSystemBatteryCheck, &QCheckBox::toggled,
+            this, &MainWindow::onShowSystemBatteryChanged);
     connect(m_airPodsRssiSpin, qOverload<int>(&QSpinBox::valueChanged),
             this, &MainWindow::onAirPodsRssiChanged);
     connect(m_xiaomiBudsRssiSpin, qOverload<int>(&QSpinBox::valueChanged),
@@ -1217,6 +1251,15 @@ void MainWindow::onStaleRetentionChanged(int index)
 void MainWindow::onHideUnpairedAirPodsChanged(bool checked)
 {
     AppSettings::setHideUnpairedAirPods(checked);
+    if (m_manager) {
+        m_manager->refreshNow();
+    }
+}
+
+void MainWindow::onShowSystemBatteryChanged(bool checked)
+{
+    AppSettings::setShowSystemBattery(checked);
+    // BatteryManager 在发布前按该设置过滤，立即刷新一轮使其生效。
     if (m_manager) {
         m_manager->refreshNow();
     }
@@ -1592,6 +1635,7 @@ void MainWindow::loadSettingsIntoUi()
     const QSignalBlocker b4(m_startupCheck);
     const QSignalBlocker b5(m_staleRetentionCombo);
     const QSignalBlocker b6(m_hideUnpairedAirPodsCheck);
+    const QSignalBlocker b6b(m_showSystemBatteryCheck);
     const QSignalBlocker b7(m_rpcEnabledCheck);
     const QSignalBlocker b8(m_rpcPortSpin);
     const QSignalBlocker b9(m_historyRetentionCombo);
@@ -1618,6 +1662,7 @@ void MainWindow::loadSettingsIntoUi()
     m_staleRetentionCombo->setCurrentIndex(
         staleRetentionIndex(AppSettings::staleRetentionSec()));
     m_hideUnpairedAirPodsCheck->setChecked(AppSettings::hideUnpairedAirPods());
+    m_showSystemBatteryCheck->setChecked(AppSettings::showSystemBattery());
     m_airPodsRssiSpin->setValue(AppSettings::airPodsRssiThreshold());
     m_xiaomiBudsRssiSpin->setValue(AppSettings::xiaomiBudsRssiThreshold());
     m_historyRetentionCombo->setCurrentIndex(
@@ -1726,6 +1771,7 @@ void MainWindow::retranslateUi()
     if (m_detailTypeRowTitle) m_detailTypeRowTitle->setText(tr("Type"));
     if (m_detailStatusRowTitle) m_detailStatusRowTitle->setText(tr("Status"));
     if (m_detailBatteryRowTitle) m_detailBatteryRowTitle->setText(tr("Battery"));
+    if (m_detailPowerRowTitle) m_detailPowerRowTitle->setText(tr("Power"));
     if (m_detailWiredRowTitle) m_detailWiredRowTitle->setText(tr("Wired"));
     if (m_detailIdRowTitle) m_detailIdRowTitle->setText(tr("Device ID"));
     if (m_leftBatteryRowTitle) m_leftBatteryRowTitle->setText(tr("Left battery"));
@@ -1744,6 +1790,7 @@ void MainWindow::retranslateUi()
     if (m_startupRowTitle) m_startupRowTitle->setText(tr("Start with Windows"));
     if (m_staleRetentionRowTitle) m_staleRetentionRowTitle->setText(tr("Stale retention"));
     if (m_hideUnpairedAirPodsRowTitle) m_hideUnpairedAirPodsRowTitle->setText(tr("Hide unpaired earbuds"));
+    if (m_showSystemBatteryRowTitle) m_showSystemBatteryRowTitle->setText(tr("Show system battery"));
     if (m_airPodsRssiRowTitle) m_airPodsRssiRowTitle->setText(tr("AirPods RSSI threshold"));
     if (m_xiaomiBudsRssiRowTitle) m_xiaomiBudsRssiRowTitle->setText(tr("XiaomiBuds RSSI threshold"));
     if (m_historyRetentionRowTitle) m_historyRetentionRowTitle->setText(tr("History retention"));
@@ -1835,6 +1882,18 @@ void MainWindow::refreshDetailPage()
     m_detailTypeValue->setText(BatteryManager::typeLabel(device.type));
     m_detailStateValue->setText(statusText(device));
     m_detailBatteryValue->setText(batteryText(device));
+    // 充放电功率行仅本机电池有意义：功率 + 方向；空闲或驱动未上报时显示占位符。
+    const bool isSystemBattery = device.type == BatteryDevice::Type::System;
+    if (m_detailPowerRowTitle && m_detailPowerRowTitle->parentWidget()) {
+        m_detailPowerRowTitle->parentWidget()->setVisible(isSystemBattery);
+    }
+    if (isSystemBattery) {
+        const QString watts = wattsNumberText(device);
+        m_detailPowerValue->setText(watts.isEmpty()
+            // 无速率：插电通常是「已充满、停止充电」的空闲态，其余为未知。
+            ? (device.externalPower ? tr("Idle") : tr("Unknown"))
+            : watts + QStringLiteral(" W"));
+    }
     m_detailWiredValue->setText(yesNoText(device.wired));
     m_detailIdValue->setText(id.isEmpty() ? tr("Unknown") : id);
 
@@ -2161,6 +2220,13 @@ void MainWindow::updateTray(const QList<BatteryDevice> &devices)
         QString suffix;
         if (device.stale) {
             suffix = QStringLiteral(" (") + tr("stale") + QStringLiteral(")");
+        }
+        // 本机电池行附带充放电功率，悬停托盘即可看到（方向见 ⚡ 标记）。
+        if (device.type == BatteryDevice::Type::System) {
+            const QString watts = wattsNumberText(device);
+            if (!watts.isEmpty()) {
+                suffix += QStringLiteral(" (") + watts + QStringLiteral(" W)");
+            }
         }
         lines << QStringLiteral("%1: %2%3")
                     .arg(deviceDisplayName(device),

@@ -241,6 +241,26 @@
         <translation>正在充电（%1）</translation>
     </message>
     <message>
+        <source>Charging (%1 W)</source>
+        <translation>正在充电（%1 W）</translation>
+    </message>
+    <message>
+        <source>Discharging (%1 W)</source>
+        <translation>放电中（%1 W）</translation>
+    </message>
+    <message>
+        <source>On AC power</source>
+        <translation>交流供电</translation>
+    </message>
+    <message>
+        <source>Idle</source>
+        <translation>空闲</translation>
+    </message>
+    <message>
+        <source>Power</source>
+        <translation>充放电功率</translation>
+    </message>
+    <message>
         <source>Left</source>
         <translation>左耳</translation>
     </message>
@@ -412,6 +432,10 @@
     <message>
         <source>Hide unpaired earbuds</source>
         <translation>隐藏未配对的耳机广播</translation>
+    </message>
+    <message>
+        <source>Show system battery</source>
+        <translation>显示系统电池</translation>
     </message>
     <message>
         <source>AirPods RSSI threshold</source>

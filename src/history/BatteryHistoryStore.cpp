@@ -45,6 +45,7 @@ QString typeKey(BatteryDevice::Type type)
     case BatteryDevice::Type::Bluetooth: return QStringLiteral("bluetooth");
     case BatteryDevice::Type::Xbox: return QStringLiteral("xbox");
     case BatteryDevice::Type::Hid: return QStringLiteral("hid");
+    case BatteryDevice::Type::System: return QStringLiteral("system");
     }
     return QStringLiteral("unknown");
 }
