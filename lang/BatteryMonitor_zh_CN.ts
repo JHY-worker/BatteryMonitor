@@ -35,6 +35,10 @@
         <translation>提醒</translation>
     </message>
     <message>
+        <source>Tray</source>
+        <translation>托盘显示</translation>
+    </message>
+    <message>
         <source>Broadcast devices of the same model share this setting.</source>
         <translation>同型号的广播蓝牙设备共用此设置。</translation>
     </message>

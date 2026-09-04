@@ -69,6 +69,11 @@
         <string>Reminder</string>
        </property>
       </column>
+      <column>
+       <property name="text">
+        <string>Tray</string>
+       </property>
+      </column>
      </widget>
     </item>
    </layout>

@@ -24,7 +24,7 @@ enum class AlertPolicy
 //
 // 键布局（QSettings 子组 "devices/<hash>"）：
 //   - Alias               : QString，默认空。用户自定义设备显示名。
-//   - TrayVisible         : bool，默认 true（保留升级前“全部进托盘”的行为）。
+//   - TrayVisible         : bool，默认 false。设备默认不进托盘，勾选后才显示。
 //   - LowBatteryAlert     : bool，默认 false。是否对该设备做低电量提醒。
 //   - LowBatteryThreshold : int 1..100，默认 20。触发提醒的电量百分比上限。
 //   - LowBatteryPolicy    : QString，默认 "once"。见 AlertPolicy 枚举。
@@ -71,7 +71,7 @@ public:
     static void setKeepCachedForever(const QString &deviceId, bool keep);
 
     // 默认值常量，供 UI 回填与判断时引用。
-    static constexpr bool kDefaultTrayVisible = true;
+    static constexpr bool kDefaultTrayVisible = false;
     static constexpr bool kDefaultAlertEnabled = false;
     static constexpr int kDefaultLowBatteryThreshold = 20;
     static constexpr AlertPolicy kDefaultAlertPolicy = AlertPolicy::Once;

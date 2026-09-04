@@ -539,16 +539,16 @@ MainWindow::MainWindow(BatteryManager *manager, BatteryHistoryStore *historyStor
 {
     ui->setupUi(this);
     setupPages();
-    // 增加“提醒”列后需要更宽的可用区域；expandedTo 也会把旧版保存的窄窗口
-    // 自动扩到新下限，避免最右侧复选框被裁切。
-    setMinimumSize(820, 420);
+    // 增加“提醒”“托盘”两列后需要更宽的可用区域；expandedTo 也会把旧版保存的
+    // 窄窗口自动扩到新下限，避免最右侧复选框被裁切。
+    setMinimumSize(900, 420);
     const QSize savedWindowSize = AppSettings::windowSize();
     resize(savedWindowSize.isValid()
                ? savedWindowSize.expandedTo(minimumSize())
-               : QSize(860, 560));
+               : QSize(940, 560));
 
     // 表格基础外观。
-    ui->deviceTable->setColumnCount(5);
+    ui->deviceTable->setColumnCount(6);
     ui->deviceTable->horizontalHeader()->setStretchLastSection(false);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
@@ -556,6 +556,8 @@ MainWindow::MainWindow(BatteryManager *manager, BatteryHistoryStore *historyStor
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     ui->deviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
     ui->deviceTable->setColumnWidth(4, 76);
+    ui->deviceTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);
+    ui->deviceTable->setColumnWidth(5, 76);
     ui->deviceTable->verticalHeader()->setDefaultSectionSize(56);
     ui->deviceTable->setShowGrid(false);
     ui->deviceTable->setAlternatingRowColors(false);
@@ -1386,6 +1388,16 @@ void MainWindow::onDeviceTrayVisibleChanged(bool checked)
         return;
     }
     DeviceSettings::setTrayVisible(m_currentDetailId, checked);
+    // 详情页与列表页共用同一设置，返回列表前也立即同步现有快捷复选框。
+    const auto checks = ui->deviceTable->findChildren<QCheckBox *>(
+        QStringLiteral("tableTrayCheck"));
+    for (QCheckBox *check : checks) {
+        if (check->property("trayDeviceId").toString() == m_currentDetailId &&
+            check->isChecked() != checked) {
+            const QSignalBlocker blocker(check);
+            check->setChecked(checked);
+        }
+    }
     // 立即反映到托盘（被取消勾选的设备从 tooltip / 最低档位计算中移除）。
     updateTray(m_devices);
 }
@@ -2067,12 +2079,13 @@ void MainWindow::rebuildTable(const QList<BatteryDevice> &devices)
         placeholder->setTextAlignment(Qt::AlignCenter);
         const QColor muted(160, 160, 160);
         placeholder->setForeground(muted);
-        table->setSpan(0, 0, 1, 5);
+        table->setSpan(0, 0, 1, 6);
         table->setItem(0, 0, placeholder);
         table->setItem(0, 1, new QTableWidgetItem());
         table->setItem(0, 2, new QTableWidgetItem());
         table->setItem(0, 3, new QTableWidgetItem());
         table->setItem(0, 4, new QTableWidgetItem());
+        table->setItem(0, 5, new QTableWidgetItem());
         return;
     }
 
@@ -2178,12 +2191,43 @@ void MainWindow::rebuildTable(const QList<BatteryDevice> &devices)
             }
             notifyLowBattery(m_devices);
         });
+
+        // 列表页快捷托盘开关。与设备设置页“显示到托盘”同一设置（按设备 id
+        // 持久化），任意一侧切换都会立即反映到托盘图标与另一侧。
+        const QString trayId = QString::fromStdWString(device.id);
+        auto *trayCheck = new QCheckBox();
+        trayCheck->setObjectName(QStringLiteral("tableTrayCheck"));
+        trayCheck->setProperty("trayDeviceId", trayId);
+        trayCheck->setChecked(DeviceSettings::trayVisible(trayId));
+        auto *trayCell = new QWidget();
+        auto *trayLayout = new QHBoxLayout(trayCell);
+        trayLayout->setContentsMargins(8, 0, 8, 0);
+        trayLayout->setAlignment(Qt::AlignCenter);
+        trayLayout->addWidget(trayCheck);
+        table->setCellWidget(row, 5, trayCell);
+        connect(trayCheck, &QCheckBox::toggled, this,
+                [this, table, trayId](bool checked) {
+            DeviceSettings::setTrayVisible(trayId, checked);
+            // 正常情况每行设备 id 唯一；防御性同步同 id 的其余复选框。
+            const auto checks = table->findChildren<QCheckBox *>(
+                QStringLiteral("tableTrayCheck"));
+            for (QCheckBox *other : checks) {
+                if (other->property("trayDeviceId").toString() == trayId &&
+                    other->isChecked() != checked) {
+                    const QSignalBlocker blocker(other);
+                    other->setChecked(checked);
+                }
+            }
+            // 立即反映到托盘（被取消勾选的设备从 tooltip / 最低档位计算中移除）。
+            updateTray(m_devices);
+        });
     }
 
     table->resizeColumnsToContents();
     table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     table->setColumnWidth(4, 76);
+    table->setColumnWidth(5, 76);
 }
 
 void MainWindow::updateTray(const QList<BatteryDevice> &devices)
