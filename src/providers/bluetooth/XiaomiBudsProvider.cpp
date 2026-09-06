@@ -13,6 +13,7 @@
 #include <cstring>
 #include <map>
 #include <set>
+#include <utility>
 #include <vector>
 
 namespace WDB = winrt::Windows::Devices::Bluetooth;
@@ -309,6 +310,49 @@ std::wstring XiaomiBudsProvider::displayName() const
     return L"XiaomiBuds";
 }
 
+void XiaomiBudsProvider::setChangeCallback(ChangeCallback callback)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_changeCallback = std::move(callback);
+}
+
+void XiaomiBudsProvider::updateDevice(uint64_t address, AdvDevice device)
+{
+    const auto now = std::chrono::steady_clock::now();
+    device.lastSeen = now;
+
+    ChangeCallback callback;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const auto it = m_devices.find(address);
+        const bool firstSeen = it == m_devices.end();
+        const bool reappeared = !firstSeen &&
+            now - it->second.lastSeen >= std::chrono::seconds(3);
+        const bool payloadChanged = !firstSeen &&
+            (it->second.leftPercent != device.leftPercent ||
+             it->second.rightPercent != device.rightPercent ||
+             it->second.casePercent != device.casePercent ||
+             it->second.leftCharging != device.leftCharging ||
+             it->second.rightCharging != device.rightCharging ||
+             it->second.caseCharging != device.caseCharging ||
+             it->second.protocolVersion != device.protocolVersion ||
+             it->second.majorId != device.majorId ||
+             it->second.minorId != device.minorId);
+
+        m_devices[address] = std::move(device);
+        if (firstSeen || reappeared || payloadChanged)
+        {
+            callback = m_changeCallback;
+        }
+    }
+
+    // 不在 m_mutex 内进入 Manager，避免 Manager 立即读快照时反向等锁。
+    if (callback)
+    {
+        callback();
+    }
+}
+
 void XiaomiBudsProvider::ensureSubscribed()
 {
     if (!m_subscriptionId)
@@ -381,25 +425,22 @@ void XiaomiBudsProvider::onAdvertisementReceived(
                 }
             }
 
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                AdvDevice &d = m_devices[advAddr];
-                d.leftPercent = left;
-                d.rightPercent = right;
-                d.casePercent = casePct;
-                d.charging = charging;
-                d.leftCharging = leftCharging;
-                d.rightCharging = rightCharging;
-                d.caseCharging = caseCharging;
-                d.protocolVersion = kModelProtocolV1;
-                d.majorId = p[2];
-                d.minorId = static_cast<uint16_t>((p[3] >> 1) & 0x07);
-                std::memcpy(d.embeddedAddrA, addrA, 6);
-                std::memcpy(d.embeddedAddrB, addrB, 6);
-                d.hasEmbeddedAddr = true;
-                d.rssi = rssi;
-                d.lastSeen = std::chrono::steady_clock::now();
-            }
+            AdvDevice device;
+            device.leftPercent = left;
+            device.rightPercent = right;
+            device.casePercent = casePct;
+            device.charging = charging;
+            device.leftCharging = leftCharging;
+            device.rightCharging = rightCharging;
+            device.caseCharging = caseCharging;
+            device.protocolVersion = kModelProtocolV1;
+            device.majorId = p[2];
+            device.minorId = static_cast<uint16_t>((p[3] >> 1) & 0x07);
+            std::memcpy(device.embeddedAddrA, addrA, 6);
+            std::memcpy(device.embeddedAddrB, addrB, 6);
+            device.hasEmbeddedAddr = true;
+            device.rssi = rssi;
+            updateDevice(advAddr, std::move(device));
             LOG_VERBOSE_W(L"[XiaomiBuds] RX mfr L=" + std::to_wstring(left) +
                           (leftCharging ? L"%⚡" : L"%") + L" R=" +
                           std::to_wstring(right) + (rightCharging ? L"%⚡" : L"%") +
@@ -446,23 +487,20 @@ void XiaomiBudsProvider::onAdvertisementReceived(
             decodeBatteryByte(p[14], casePct, caseCharging);  // 充电盒
             const bool charging = leftCharging || rightCharging || caseCharging;
 
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                AdvDevice &d = m_devices[advAddr];
-                d.leftPercent = left;
-                d.rightPercent = right;
-                d.casePercent = casePct;
-                d.charging = charging;
-                d.leftCharging = leftCharging;
-                d.rightCharging = rightCharging;
-                d.caseCharging = caseCharging;
-                d.protocolVersion = kModelProtocolV2;
-                d.majorId = p[1];
-                d.minorId = static_cast<uint16_t>(p[2]) |
-                            (static_cast<uint16_t>(p[3]) << 8);
-                d.rssi = rssi;
-                d.lastSeen = std::chrono::steady_clock::now();
-            }
+            AdvDevice device;
+            device.leftPercent = left;
+            device.rightPercent = right;
+            device.casePercent = casePct;
+            device.charging = charging;
+            device.leftCharging = leftCharging;
+            device.rightCharging = rightCharging;
+            device.caseCharging = caseCharging;
+            device.protocolVersion = kModelProtocolV2;
+            device.majorId = p[1];
+            device.minorId = static_cast<uint16_t>(p[2]) |
+                             (static_cast<uint16_t>(p[3]) << 8);
+            device.rssi = rssi;
+            updateDevice(advAddr, std::move(device));
             LOG_VERBOSE_W(L"[XiaomiBuds] RX maf L=" + std::to_wstring(left) +
                           (leftCharging ? L"%⚡" : L"%") + L" R=" +
                           std::to_wstring(right) + (rightCharging ? L"%⚡" : L"%") +

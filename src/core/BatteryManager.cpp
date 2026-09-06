@@ -389,6 +389,10 @@ BatteryManager::~BatteryManager()
     if (m_timer) {
         m_timer->stop();
     }
+    // 先断开事件型 provider 的反向回调，避免析构期间再投递刷新任务。
+    for (auto &provider : m_providers) {
+        provider->setChangeCallback({});
+    }
     for (auto &runtime : m_providerRuntimes) {
         if (runtime.thread) {
             runtime.thread->quit();
@@ -444,6 +448,14 @@ void BatteryManager::start()
         runtime.thread = std::move(thread);
         runtime.worker = worker;
         m_providerRuntimes.push_back(std::move(runtime));
+
+        // BLE 广播等事件型 provider 收到有意义的新数据后，只刷新它自己。
+        // provider 回调可能在 WinRT 线程池上运行，因此切回 Manager 所在线程。
+        m_providers[static_cast<size_t>(i)]->setChangeCallback([this, i]() {
+            QMetaObject::invokeMethod(this, [this, i]() {
+                requestProviderRefresh(i);
+            }, Qt::QueuedConnection);
+        });
     }
 
     m_timer = new QTimer(this);

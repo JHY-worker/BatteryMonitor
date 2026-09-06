@@ -27,9 +27,9 @@
 //     处理左右翻转；nibble→百分比（nib>=10→100，nib==15→-1 未知，其余 nib*10，
 //     AirPods Max 型号 +5）；充电状态从 payload[7] 高 nibble 判定。
 //
-// 适配现有轮询架构：共享 watcher 订阅在 readDevices() 首次调用时注册并保持；
-// readDevices() 返回“最近 N 秒内收到过广播”的设备快照。这样事件驱动逻辑
-// 融入同步轮询，BatteryManager 无需改动。
+// 共享 watcher 订阅在 readDevices() 首次调用时注册并保持；
+// readDevices() 返回“最近 N 秒内收到过广播”的设备快照。收到有意义的
+// 新广播时会同时通知 BatteryManager 定向刷新，无需等待下一个轮询周期。
 class AirPodsProvider : public IBatteryProvider
 {
 public:
@@ -38,6 +38,7 @@ public:
 
     std::wstring displayName() const override;
     std::vector<BatteryDevice> readDevices() override;
+    void setChangeCallback(ChangeCallback callback) override;
 
 private:
     // 单台 Apple 设备的最新解析结果（缓存）。
@@ -63,6 +64,9 @@ private:
     // 广播接收回调（在 WinRT 线程池线程触发，经 SharedBleWatcher 分发）。
     void onAdvertisementReceived(const SharedBleWatcher::Args &args);
 
+    // 更新广播快照，并在首次出现、状态变化或静默后重现时请求即时刷新。
+    void updateDevice(uint64_t address, AdvDevice device);
+
     // 解析 Apple 厂商数据 payload，成功返回 true 并填充各电量 / 充电字段。
     static bool parseApplePayload(const uint8_t *data, std::size_t len,
                                   std::wstring &modelName, uint16_t &modelId,
@@ -73,6 +77,7 @@ private:
     // 蓝牙地址 -> 解析结果。由 watcher 回调线程写、readDevices() 读，需加锁。
     std::map<uint64_t, AdvDevice> m_devices;
     std::mutex m_mutex;
+    ChangeCallback m_changeCallback;
 
     // 广播 RSSI 阈值（dBm）。readDevices() 每轮从 AppSettings 刷新，
     // watcher 回调线程高频读取（不能每个广播都查 QSettings，故缓存为原子量）。

@@ -24,9 +24,9 @@
 //
 //   两类帧的电量字节编码一致：0xFF=未知；低 7 位=百分比；bit7=充电中。
 //
-// 适配现有轮询架构（与 AirPodsProvider 相同）：共享 watcher 订阅在
-// readDevices() 首次调用时注册并保持；readDevices() 返回“最近 N 秒内收到过
-// 广播”的设备快照。
+// 共享 watcher 订阅在 readDevices() 首次调用时注册并保持；readDevices()
+// 返回“最近 N 秒内收到过广播”的设备快照。收到有意义的新广播时会
+// 通知 BatteryManager 定向刷新，无需等待下一个轮询周期。
 class XiaomiBudsProvider : public IBatteryProvider
 {
 public:
@@ -35,6 +35,7 @@ public:
 
     std::wstring displayName() const override;
     std::vector<BatteryDevice> readDevices() override;
+    void setChangeCallback(ChangeCallback callback) override;
 
 private:
     // 单台小米耳机的最新解析结果（缓存，按 BLE 广播地址聚合）。
@@ -66,9 +67,14 @@ private:
     // 广播接收回调（在 WinRT 线程池线程触发，经 SharedBleWatcher 分发）。
     void onAdvertisementReceived(const SharedBleWatcher::Args &args);
 
+    // 更新单台设备的最新广播；首次出现、电量变化或静默后重新出现时
+    // 立即请求 Manager 刷新，连续重复广播不会造成刷新风暴。
+    void updateDevice(uint64_t address, AdvDevice device);
+
     // 蓝牙地址 -> 解析结果。由 watcher 回调线程写、readDevices() 读，需加锁。
     std::map<uint64_t, AdvDevice> m_devices;
     std::mutex m_mutex;
+    ChangeCallback m_changeCallback;
 
     // 广播 RSSI 阈值（dBm）。readDevices() 每轮从 AppSettings 刷新，
     // watcher 回调线程高频读取（不能每个广播都查 QSettings，故缓存为原子量）。

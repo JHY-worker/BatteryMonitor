@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <set>
+#include <utility>
 #include <vector>
 
 namespace WDB = winrt::Windows::Devices::Bluetooth;
@@ -236,6 +237,46 @@ std::wstring AirPodsProvider::displayName() const
     return L"AirPods";
 }
 
+void AirPodsProvider::setChangeCallback(ChangeCallback callback)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_changeCallback = std::move(callback);
+}
+
+void AirPodsProvider::updateDevice(uint64_t address, AdvDevice device)
+{
+    const auto now = std::chrono::steady_clock::now();
+    device.lastSeen = now;
+
+    ChangeCallback callback;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const auto it = m_devices.find(address);
+        const bool firstSeen = it == m_devices.end();
+        const bool reappeared = !firstSeen &&
+            now - it->second.lastSeen >= std::chrono::seconds(3);
+        const bool payloadChanged = !firstSeen &&
+            (it->second.modelId != device.modelId ||
+             it->second.leftPercent != device.leftPercent ||
+             it->second.rightPercent != device.rightPercent ||
+             it->second.casePercent != device.casePercent ||
+             it->second.leftCharging != device.leftCharging ||
+             it->second.rightCharging != device.rightCharging ||
+             it->second.caseCharging != device.caseCharging);
+
+        m_devices[address] = std::move(device);
+        if (firstSeen || reappeared || payloadChanged)
+        {
+            callback = m_changeCallback;
+        }
+    }
+
+    if (callback)
+    {
+        callback();
+    }
+}
+
 void AirPodsProvider::ensureSubscribed()
 {
     if (!m_subscriptionId)
@@ -288,22 +329,18 @@ void AirPodsProvider::onAdvertisementReceived(
                 continue;
             }
 
-            // 更新缓存。
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                AdvDevice &d = m_devices[args.BluetoothAddress()];
-                d.name = name;
-                d.modelId = modelId;
-                d.leftPercent = left;
-                d.rightPercent = right;
-                d.casePercent = casePct;
-                d.charging = charging;
-                d.leftCharging = leftCharging;
-                d.rightCharging = rightCharging;
-                d.caseCharging = caseCharging;
-                d.rssi = rssi;
-                d.lastSeen = std::chrono::steady_clock::now();
-            }
+            AdvDevice device;
+            device.name = name;
+            device.modelId = modelId;
+            device.leftPercent = left;
+            device.rightPercent = right;
+            device.casePercent = casePct;
+            device.charging = charging;
+            device.leftCharging = leftCharging;
+            device.rightCharging = rightCharging;
+            device.caseCharging = caseCharging;
+            device.rssi = rssi;
+            updateDevice(args.BluetoothAddress(), std::move(device));
             LOG_VERBOSE_W(L"[AirPods] RX " + name + L" L=" + std::to_wstring(left) +
                           (leftCharging ? L"%⚡" : L"%") + L" R=" + std::to_wstring(right) +
                           (rightCharging ? L"%⚡" : L"%") + L" Case=" +

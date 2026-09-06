@@ -2,6 +2,7 @@
 
 #include "BatteryDevice.h"
 
+#include <functional>
 #include <vector>
 
 // 电量提供者抽象接口（纯 C++，不依赖 Qt）。
@@ -14,6 +15,8 @@
 class IBatteryProvider
 {
 public:
+    using ChangeCallback = std::function<void()>;
+
     virtual ~IBatteryProvider() = default;
 
     // 提供者名称（如 L"Bluetooth" / L"Xbox"），用于日志与诊断。
@@ -22,4 +25,11 @@ public:
     // 同步读取当前所有设备的电量。在 BatteryManager 的 worker 线程调用，
     // 实现可执行阻塞 / 慢速 I/O（如 WinRT GATT 读操作），不会卡住 UI 线程。
     virtual std::vector<BatteryDevice> readDevices() = 0;
+
+    // 事件型 provider 可在收到新数据时请求 Manager 立即读取快照。
+    // 回调可从任意线程调用；默认实现保持普通 provider 的轮询行为。
+    virtual void setChangeCallback(ChangeCallback callback)
+    {
+        (void)callback;
+    }
 };
