@@ -632,12 +632,17 @@ std::vector<BatteryDevice> XiaomiBudsProvider::readDevices()
                 }
             }
         }
+        // 同一零售型号可能在不同广播帧中使用多个 minor id。
+        // 例如 Redmi Buds 5 Pro 会出现 2/1/5、2/1/6、2/1/7。
+        // 提醒设置必须按零售型号分组，不能按单帧的协议 id 分组，
+        // 否则 UI 显示的变体已关闭，另一个隐藏变体的旧设置仍会发通知。
+        const wchar_t *knownModel = xiaomiModelName(
+            adv.protocolVersion, adv.majorId, adv.minorId);
         if (name.empty())
         {
-            if (const wchar_t *model = xiaomiModelName(
-                    adv.protocolVersion, adv.majorId, adv.minorId))
+            if (knownModel)
             {
-                name = model;
+                name = knownModel;
             }
             else
             {
@@ -652,10 +657,22 @@ std::vector<BatteryDevice> XiaomiBudsProvider::readDevices()
 
         BatteryDevice device;
         device.id = L"xiaomibuds:" + std::to_wstring(canonicalAddress(addr, adv));
-        device.alertGroupId = L"broadcast:xiaomi_buds:model:" +
-                              std::to_wstring(adv.protocolVersion) + L":" +
-                              std::to_wstring(adv.majorId) + L":" +
-                              std::to_wstring(adv.minorId);
+        if (knownModel)
+        {
+            // 使用 provider 内置的标准型号名，不使用可被用户改名的
+            // Windows 配对名。新分组没有显式设置时会安全地默认关闭，
+            // 也不会继承旧协议变体下看不见的开启状态。
+            device.alertGroupId = L"broadcast:xiaomi_buds:model_name:" +
+                                  std::wstring(knownModel);
+        }
+        else
+        {
+            // 未知型号没有可靠的归并依据，仍按完整协议 id 隔离。
+            device.alertGroupId = L"broadcast:xiaomi_buds:model:" +
+                                  std::to_wstring(adv.protocolVersion) + L":" +
+                                  std::to_wstring(adv.majorId) + L":" +
+                                  std::to_wstring(adv.minorId);
+        }
         device.name = name;
         device.type = BatteryDevice::Type::Bluetooth;
         device.subType = BatteryDevice::SubType::XiaomiBuds;

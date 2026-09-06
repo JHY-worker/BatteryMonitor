@@ -449,8 +449,22 @@ std::vector<BatteryDevice> AirPodsProvider::readDevices()
 
         BatteryDevice device;
         device.id = L"airpods:" + std::to_wstring(addr);
-        device.alertGroupId = L"broadcast:airpods:model:" +
-                              std::to_wstring(adv.modelId);
+        const auto modelIt = modelTable().find(adv.modelId);
+        if (modelIt != modelTable().end())
+        {
+            // 已识别设备按稳定的零售型号分组，不直接使用广播
+            // model id。同一型号可能有多个 id（如 Beats Studio 3 的
+            // 0x2007 / 0x2009）；按 id 分组会让 UI 显示为关闭时，
+            // 另一个隐藏变体仍持续发通知。新分组默认关闭，
+            // 不继承旧 id 下不可见的开启状态。
+            device.alertGroupId = L"broadcast:airpods:model_name:" + modelIt->second;
+        }
+        else
+        {
+            // 未知型号的名称包含 id，没有可靠的跨 id 归并依据。
+            device.alertGroupId = L"broadcast:airpods:model:" +
+                                  std::to_wstring(adv.modelId);
+        }
         device.name = adv.name;
         device.type = BatteryDevice::Type::Bluetooth;
         device.subType = BatteryDevice::SubType::AirPods;
