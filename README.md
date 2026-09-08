@@ -2,7 +2,7 @@
 
 [English](README.en.md) | 简体中文
 
-![BatteryMonitor 主界面](image/README/1783349507421.png "BatteryMonitor 主界面")
+![1788878957429](image/README/1788878957429.png)
 
 ![BatteryMonitor 系统托盘电量提示](image/README/1783349577055.png "BatteryMonitor 系统托盘电量提示")
 
@@ -13,7 +13,6 @@ BatteryMonitor 是一个 Windows 桌面电量监控工具，用来在一个窗�
 ## 注意事项
 
 > Flydigi 手柄需要先安装飞智官方软件及其驱动。读取电量时只需确保 `SpaceStationService` 服务正在运行，不需要打开飞智官方软件。
-
 
 ## 已验证设备
 
@@ -53,7 +52,7 @@ BatteryMonitor 是一个 Windows 桌面电量监控工具，用来在一个窗�
 | AirPods / Beats 系列                 | Apple Company ID`0x004C`，代码内置 Model ID 表                                                                                                             | 理论支持，未验证 |
 | 小米 / Redmi Buds 系列耳机           | 小米 BLE 广播（CompanyId`0x038F` / Service UUID `0xFD2D`），已验证 Redmi Buds 5 Pro，其它型号理论支持                                                    | 部分验证         |
 | Xbox / XInput / Windows 游戏控制器   | Microsoft VID`0x045E` 或 Windows 控制器接口                                                                                                                | 理论支持，未验证 |
-| Flydigi 手柄系列                     | 可被 `SpaceStationService` 识别并上报的 Apex、Vader、Direwolf 等型号；Direwolf 4 已验证                                                                    | 部分验证         |
+| Flydigi 手柄系列                     | 可被`SpaceStationService` 识别并上报的 Apex、Vader、Direwolf 等型号；Direwolf 4 已验证                                                                     | 部分验证         |
 | 标准 BLE 电量服务设备                | BLE GATT Battery Service，无固定 USB VID/PID                                                                                                                 | 理论支持，未验证 |
 | 经典蓝牙音频设备                     | Windows BTHENUM 设备属性，无固定 USB VID/PID                                                                                                                 | 理论支持，未验证 |
 
