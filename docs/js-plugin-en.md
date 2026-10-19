@@ -29,6 +29,15 @@ The global plugin switch is enabled by default. A plugin ID is its extensionless
 `razer/razer-basilisk-x-hyperspeed`. Identically named plugins in different vendor directories
 therefore do not conflict.
 
+Under Settings → Plugins, click Manage plugins to open a separate window with the
+Enable plugins master switch and individual plugin checkboxes. Search by plugin ID
+(name) or file path, ignoring case. Clear the search to show all plugins; the footer
+shows the filtered count. The master switch and all plugins default to enabled, including
+new plugins downloaded from GitHub. Preferences are saved automatically and take effect
+after restarting BatteryMonitor. Updating an existing plugin preserves its preference;
+turning off the master switch preserves individual choices. The list refreshes when
+opening the manager and after a download finishes, preserving the search query.
+
 > A plugin can send packets to matching HID devices. Incorrect commands may change device settings
 > or make a device temporarily unresponsive. Install plugins only from trusted sources and test new
 > protocols on non-critical hardware first.

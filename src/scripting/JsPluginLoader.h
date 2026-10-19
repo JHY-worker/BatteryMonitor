@@ -17,6 +17,16 @@ namespace JsPluginLoader
     // 默认插件目录 <exe目录>/plugins。
     std::wstring defaultPluginDir();
 
+    struct PluginFile
+    {
+        std::wstring id;
+        std::wstring filePath;
+    };
+
+    // 列出全部插件（包括用户已禁用的插件），不执行 JS、不创建 provider。
+    // 设置页和实际加载共用同一套文件筛选与 ID 规则。
+    std::vector<PluginFile> installedPlugins(const std::wstring &dir);
+
     // 递归扫描目录下的 *.js,逐个构造 JsPluginProvider。
     // 目录不存在 / 不可读时返回空列表并写一条 VERBOSE 日志。
     std::vector<std::unique_ptr<IBatteryProvider>> discover(const std::wstring &dir);

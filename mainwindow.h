@@ -25,6 +25,7 @@ class QSystemTrayIcon;
 class QAction;
 class QCheckBox;
 class QComboBox;
+class QDialog;
 class QEvent;
 class QFrame;
 class QLabel;
@@ -33,6 +34,7 @@ class QPushButton;
 class QScrollArea;
 class QSpinBox;
 class QStackedWidget;
+class QTableWidget;
 class QWidget;
 
 class MainWindow : public QMainWindow
@@ -133,6 +135,10 @@ private:
     int historyRetentionIndex(int days) const;
     qint64 historyRangeStartMsecs() const;
     void refreshHistoryChart();
+    void refreshPluginList();
+    void showPluginManager();
+    void filterPluginList();
+    void retranslatePluginManager();
 
     Ui::MainWindow *ui;
     BatteryManager *m_manager;
@@ -241,6 +247,15 @@ private:
     QLabel *m_pluginsSectionLabel = nullptr;
     QLabel *m_pluginUpdateRowTitle = nullptr;
     QLabel *m_pluginUpdateHint = nullptr;
+    QLabel *m_pluginManageRowTitle = nullptr;
+    QPushButton *m_pluginManageButton = nullptr;
+    QDialog *m_pluginManager = nullptr;
+    QCheckBox *m_pluginsEnabledCheck = nullptr;
+    QLabel *m_pluginToggleHint = nullptr;
+    QLineEdit *m_pluginSearchEdit = nullptr;
+    QTableWidget *m_pluginTable = nullptr;
+    QLabel *m_pluginCountLabel = nullptr;
+    QPushButton *m_pluginCloseButton = nullptr;
     QPushButton *m_pluginUpdateButton = nullptr;
     PluginUpdater *m_pluginUpdater = nullptr;
 

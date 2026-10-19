@@ -59,12 +59,12 @@ std::wstring defaultPluginDir()
     return (exeDir / L"plugins").wstring();
 }
 
-std::vector<std::unique_ptr<IBatteryProvider>> discover(const std::wstring &dir)
+std::vector<PluginFile> installedPlugins(const std::wstring &dir)
 {
-    std::vector<std::unique_ptr<IBatteryProvider>> providers;
+    std::vector<PluginFile> plugins;
     if (dir.empty())
     {
-        return providers;
+        return plugins;
     }
 
     std::error_code ec;
@@ -72,7 +72,7 @@ std::vector<std::unique_ptr<IBatteryProvider>> discover(const std::wstring &dir)
     {
         // 目录不存在属常态(用户从未装过插件),不打扰。
         LOG_VERBOSE_W(L"[js] plugin directory not found: " + dir);
-        return providers;
+        return plugins;
     }
 
     const std::filesystem::path root(dir);
@@ -83,7 +83,7 @@ std::vector<std::unique_ptr<IBatteryProvider>> discover(const std::wstring &dir)
     if (ec)
     {
         LOG_WARN_W(L"[js] cannot scan plugin directory: " + dir);
-        return providers;
+        return plugins;
     }
 
     for (; it != end; it.increment(ec))
@@ -108,19 +108,29 @@ std::vector<std::unique_ptr<IBatteryProvider>> discover(const std::wstring &dir)
     }
     std::sort(files.begin(), files.end()); // 按相对路径稳定加载,便于日志对照
 
-    for (const std::filesystem::path &path : files)
+    for (const auto &path : files)
+    {
+        plugins.push_back({pluginPathToId(root, path), path.wstring()});
+    }
+    return plugins;
+}
+
+std::vector<std::unique_ptr<IBatteryProvider>> discover(const std::wstring &dir)
+{
+    std::vector<std::unique_ptr<IBatteryProvider>> providers;
+    for (const auto &plugin : installedPlugins(dir))
     {
         // ID 使用相对 plugins 根目录的无扩展路径，避免不同子目录中的同名
         // 插件冲突，例如 razer/mouse 与 logitech/mouse。
-        const std::wstring id = pluginPathToId(root, path);
+        const std::wstring &id = plugin.id;
         if (AppSettings::pluginDisabled(QString::fromStdWString(id)))
         {
             LOG_W(L"[js] plugin '" + id + L"' is disabled by settings, skipping");
             continue;
         }
-        LOG_W(L"[js] discovered plugin '" + id + L"' (" + path.wstring() + L")");
+        LOG_W(L"[js] discovered plugin '" + id + L"' (" + plugin.filePath + L")");
         providers.push_back(
-            std::make_unique<JsPluginProvider>(wideToUtf8(id), path.wstring()));
+            std::make_unique<JsPluginProvider>(wideToUtf8(id), plugin.filePath));
     }
     return providers;
 }

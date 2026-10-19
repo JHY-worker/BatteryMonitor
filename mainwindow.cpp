@@ -6,6 +6,7 @@
 #include "src/history/BatteryHistoryStore.h"
 #include "src/rpc/RpcServer.h"
 #include "src/scripting/PluginUpdater.h"
+#include "src/scripting/JsPluginLoader.h"
 #include "util/AppSettings.h"
 #include "util/DeviceSettings.h"
 
@@ -15,6 +16,7 @@
 #include <QCloseEvent>
 #include <QColor>
 #include <QCoreApplication>
+#include <QDialog>
 #include <QEvent>
 #include <QFileDialog>
 #include <QFrame>
@@ -965,6 +967,11 @@ void MainWindow::setupPages()
     settingsLayout->addWidget(m_pluginsSectionLabel);
     auto *pluginsGroup = makeInfoGroup();
     auto *pluginsLayout = qobject_cast<QVBoxLayout *>(pluginsGroup->layout());
+    m_pluginManageRowTitle = new QLabel(tr("Installed plugins"));
+    m_pluginManageButton = new QPushButton(tr("Manage plugins..."));
+    m_pluginManageButton->setCursor(Qt::PointingHandCursor);
+    addInfoRow(pluginsLayout, m_pluginManageRowTitle, m_pluginManageButton);
+    connect(m_pluginManageButton, &QPushButton::clicked, this, &MainWindow::showPluginManager);
     m_pluginUpdateRowTitle = new QLabel(tr("Official plugins"));
     m_pluginUpdateButton = new QPushButton(tr("Update from GitHub"));
     m_pluginUpdateButton->setCursor(Qt::PointingHandCursor);
@@ -990,6 +997,7 @@ void MainWindow::setupPages()
             [this](bool success, int updated, const QString &error) {
         m_pluginUpdateButton->setEnabled(true);
         m_pluginUpdateButton->setText(tr("Update from GitHub"));
+        refreshPluginList();
         if (!success) {
             QMessageBox::warning(this, tr("Plugin update"), error);
         } else if (updated == 0) {
@@ -1628,6 +1636,123 @@ void MainWindow::showSettingsPage()
     }
 }
 
+void MainWindow::showPluginManager()
+{
+    if (!m_pluginManager) {
+        m_pluginManager = new QDialog(this);
+        m_pluginManager->resize(720, 520);
+        m_pluginManager->setMinimumSize(480, 360);
+        auto *layout = new QVBoxLayout(m_pluginManager);
+        layout->setContentsMargins(18, 18, 18, 18);
+        layout->setSpacing(12);
+        m_pluginsEnabledCheck = new QCheckBox(m_pluginManager);
+        layout->addWidget(m_pluginsEnabledCheck);
+        m_pluginToggleHint = new QLabel(m_pluginManager);
+        m_pluginToggleHint->setObjectName(QStringLiteral("rowValue"));
+        m_pluginToggleHint->setWordWrap(true);
+        layout->addWidget(m_pluginToggleHint);
+        m_pluginSearchEdit = new QLineEdit(m_pluginManager);
+        m_pluginSearchEdit->setClearButtonEnabled(true);
+        layout->addWidget(m_pluginSearchEdit);
+        m_pluginTable = new QTableWidget(0, 2, m_pluginManager);
+        m_pluginTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        m_pluginTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_pluginTable->setSelectionMode(QAbstractItemView::SingleSelection);
+        m_pluginTable->verticalHeader()->hide();
+        m_pluginTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        m_pluginTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+        m_pluginTable->horizontalHeader()->setSortIndicator(1, Qt::AscendingOrder);
+        m_pluginTable->setWordWrap(false);
+        layout->addWidget(m_pluginTable, 1);
+        auto *footer = new QHBoxLayout();
+        m_pluginCountLabel = new QLabel(m_pluginManager);
+        m_pluginCountLabel->setWordWrap(true);
+        footer->addWidget(m_pluginCountLabel, 1);
+        m_pluginCloseButton = new QPushButton(m_pluginManager);
+        m_pluginCloseButton->setAutoDefault(false);
+        footer->addWidget(m_pluginCloseButton);
+        layout->addLayout(footer);
+        connect(m_pluginCloseButton, &QPushButton::clicked, m_pluginManager, &QDialog::close);
+        connect(m_pluginSearchEdit, &QLineEdit::textChanged, this, &MainWindow::filterPluginList);
+        connect(m_pluginsEnabledCheck, &QCheckBox::toggled, this, [this](bool enabled) {
+            AppSettings::setPluginsEnabled(enabled);
+            m_pluginTable->setEnabled(enabled);
+        });
+        connect(m_pluginTable, &QTableWidget::itemChanged, this, [](QTableWidgetItem *item) {
+            if (item->column() == 0)
+                AppSettings::setPluginDisabled(item->data(Qt::UserRole).toString(), item->checkState() != Qt::Checked);
+        });
+        retranslatePluginManager();
+    }
+    refreshPluginList();
+    m_pluginManager->show();
+    m_pluginManager->raise();
+    m_pluginManager->activateWindow();
+    m_pluginSearchEdit->setFocus();
+}
+
+void MainWindow::refreshPluginList()
+{
+    if (!m_pluginManager) return;
+    const QSignalBlocker checkBlocker(m_pluginsEnabledCheck);
+    const QSignalBlocker tableBlocker(m_pluginTable);
+    m_pluginsEnabledCheck->setChecked(AppSettings::pluginsEnabled());
+    m_pluginTable->setEnabled(m_pluginsEnabledCheck->isChecked());
+    m_pluginTable->setSortingEnabled(false);
+    m_pluginTable->setRowCount(0);
+    const auto plugins = JsPluginLoader::installedPlugins(JsPluginLoader::defaultPluginDir());
+    for (const auto &plugin : plugins) {
+        const QString id = QString::fromStdWString(plugin.id);
+        const int row = m_pluginTable->rowCount();
+        m_pluginTable->insertRow(row);
+        auto *enabled = new QTableWidgetItem();
+        enabled->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+        enabled->setData(Qt::UserRole, id);
+        // No saved preference means enabled, including newly downloaded plugins.
+        enabled->setCheckState(AppSettings::pluginDisabled(id) ? Qt::Unchecked : Qt::Checked);
+        m_pluginTable->setItem(row, 0, enabled);
+        auto *name = new QTableWidgetItem(id);
+        name->setToolTip(QString::fromStdWString(plugin.filePath));
+        m_pluginTable->setItem(row, 1, name);
+    }
+    m_pluginTable->setSortingEnabled(true);
+    filterPluginList();
+}
+
+void MainWindow::filterPluginList()
+{
+    if (!m_pluginTable) return;
+    const QString query = m_pluginSearchEdit->text().trimmed();
+    int visible = 0;
+    for (int row = 0; row < m_pluginTable->rowCount(); ++row) {
+        const auto *name = m_pluginTable->item(row, 1);
+        const bool matches = name->text().contains(query, Qt::CaseInsensitive)
+                             || name->toolTip().contains(query, Qt::CaseInsensitive);
+        m_pluginTable->setRowHidden(row, !matches);
+        if (matches) ++visible;
+    }
+    if (m_pluginTable->rowCount() == 0)
+        m_pluginCountLabel->setText(tr("No plugins installed. Download official plugins from Settings."));
+    else if (visible == 0)
+        m_pluginCountLabel->setText(tr("No matching plugins."));
+    else
+        m_pluginCountLabel->setText(tr("Showing %1 of %2 plugin(s)").arg(visible).arg(m_pluginTable->rowCount()));
+}
+
+void MainWindow::retranslatePluginManager()
+{
+    if (!m_pluginManager) return;
+    m_pluginManager->setWindowTitle(tr("Plugin manager"));
+    m_pluginsEnabledCheck->setText(tr("Enable plugins"));
+    m_pluginToggleHint->setText(tr("New plugins are enabled by default. Enable/disable changes take effect after restarting BatteryMonitor."));
+    m_pluginSearchEdit->setPlaceholderText(tr("Search plugins by name or path..."));
+    m_pluginSearchEdit->setAccessibleName(tr("Search plugins by name or path..."));
+    const QSignalBlocker blocker(m_pluginTable);
+    m_pluginTable->setHorizontalHeaderLabels({tr("Enabled"), tr("Plugin")});
+    m_pluginCloseButton->setText(tr("Close"));
+    filterPluginList();
+}
+
 int MainWindow::intervalIndex(int msec) const
 {
     switch (msec) {
@@ -1836,6 +1961,9 @@ void MainWindow::retranslateUi()
     if (m_generalSectionLabel) m_generalSectionLabel->setText(tr("General"));
     if (m_connectionsSectionLabel) m_connectionsSectionLabel->setText(tr("Connections"));
     if (m_pluginsSectionLabel) m_pluginsSectionLabel->setText(tr("Plugins"));
+    if (m_pluginManageRowTitle) m_pluginManageRowTitle->setText(tr("Installed plugins"));
+    if (m_pluginManageButton) m_pluginManageButton->setText(tr("Manage plugins..."));
+    retranslatePluginManager();
     if (m_pluginUpdateRowTitle) m_pluginUpdateRowTitle->setText(tr("Official plugins"));
     if (m_pluginUpdateButton && !m_pluginUpdater->isRunning())
         m_pluginUpdateButton->setText(tr("Update from GitHub"));

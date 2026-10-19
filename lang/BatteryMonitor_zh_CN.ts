@@ -4,6 +4,18 @@
 <context>
     <name>MainWindow</name>
     <message><source>Plugins</source><translation>插件</translation></message>
+    <message><source>Enable plugins</source><translation>启用插件</translation></message>
+    <message><source>New plugins are enabled by default. Enable/disable changes take effect after restarting BatteryMonitor.</source><translation>新增插件默认启用。启用或禁用的更改将在重启 BatteryMonitor 后生效。</translation></message>
+    <message><source>No plugins installed. Download official plugins from Settings.</source><translation>尚未安装插件，可在设置中下载官方插件。</translation></message>
+    <message><source>Installed plugins</source><translation>已安装插件</translation></message>
+    <message><source>Manage plugins...</source><translation>管理插件…</translation></message>
+    <message><source>Plugin manager</source><translation>插件管理</translation></message>
+    <message><source>Close</source><translation>关闭</translation></message>
+    <message><source>Search plugins by name or path...</source><translation>按名称或路径搜索插件…</translation></message>
+    <message><source>No matching plugins.</source><translation>没有匹配的插件。</translation></message>
+    <message><source>Showing %1 of %2 plugin(s)</source><translation>显示 %1 / %2 个插件</translation></message>
+    <message><source>Plugin</source><translation>插件</translation></message>
+    <message><source>Enabled</source><translation>启用</translation></message>
     <message><source>Official plugins</source><translation>官方插件</translation></message>
     <message><source>Update from GitHub</source><translation>从 GitHub 更新</translation></message>
     <message><source>Downloads plugins from JKWTCN/BatteryMonitor. Matching local files are overwritten; restart to apply.</source><translation>从 JKWTCN/BatteryMonitor 下载插件，将覆盖同路径的本地文件，重启后生效。</translation></message>
