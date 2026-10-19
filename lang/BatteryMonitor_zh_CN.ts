@@ -3,6 +3,15 @@
 <TS version="2.1" language="zh_CN">
 <context>
     <name>MainWindow</name>
+    <message><source>Plugins</source><translation>插件</translation></message>
+    <message><source>Official plugins</source><translation>官方插件</translation></message>
+    <message><source>Update from GitHub</source><translation>从 GitHub 更新</translation></message>
+    <message><source>Downloads plugins from JKWTCN/BatteryMonitor. Matching local files are overwritten; restart to apply.</source><translation>从 JKWTCN/BatteryMonitor 下载插件，将覆盖同路径的本地文件，重启后生效。</translation></message>
+    <message><source>Checking GitHub...</source><translation>正在检查 GitHub…</translation></message>
+    <message><source>Downloading %1/%2...</source><translation>正在下载 %1/%2…</translation></message>
+    <message><source>Plugin update</source><translation>插件更新</translation></message>
+    <message><source>All official plugins are up to date.</source><translation>所有官方插件均已是最新版本。</translation></message>
+    <message><source>Updated %1 plugin(s). Restart BatteryMonitor to apply the changes.</source><translation>已更新 %1 个插件，请重启 BatteryMonitor 使更改生效。</translation></message>
     <message>
         <location filename="../mainwindow.cpp" line="644"/>
         <location filename="../mainwindow.cpp" line="880"/>
@@ -523,5 +532,20 @@
 <context>
     <name>BatteryHistoryStore</name>
     <message><source>Failed to create the history data directory.</source><translation>无法创建历史数据目录。</translation></message>
+</context>
+<context>
+    <name>PluginUpdater</name>
+    <message><source>The GitHub response exceeds the download size limit.</source><translation>GitHub 返回的内容超过下载大小限制。</translation></message>
+    <message><source>GitHub download failed (HTTP %1): %2</source><translation>GitHub 下载失败（HTTP %1）：%2</translation></message>
+    <message><source>GitHub returned an invalid or incomplete plugin list.</source><translation>GitHub 返回的插件列表无效或不完整。</translation></message>
+    <message><source>GitHub returned an unsafe or unsupported plugin entry: %1</source><translation>GitHub 返回了不安全或不支持的插件条目：%1</translation></message>
+    <message><source>No plugins were found in the GitHub repository.</source><translation>GitHub 仓库中未找到插件。</translation></message>
+    <message><source>Plugin integrity check failed: %1</source><translation>插件完整性校验失败：%1</translation></message>
+    <message><source>Cannot write to the application directory. Check its write permissions.</source><translation>无法写入程序目录，请检查写入权限。</translation></message>
+    <message><source>Unsafe plugin destination: %1</source><translation>插件目标路径不安全：%1</translation></message>
+    <message><source>Cannot read the existing plugin: %1</source><translation>无法读取现有插件：%1</translation></message>
+    <message><source>Cannot stage the plugin update: %1</source><translation>无法暂存插件更新：%1</translation></message>
+    <message><source>Cannot install the plugin update: %1. Check write permissions and file locks.</source><translation>无法安装插件更新：%1。请检查写入权限以及文件是否被占用。</translation></message>
+    <message><source>Some files could not be restored. Backups are in: %1</source><translation>部分文件无法恢复，备份保存在：%1</translation></message>
 </context>
 </TS>

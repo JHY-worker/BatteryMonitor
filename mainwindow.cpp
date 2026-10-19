@@ -5,6 +5,7 @@
 #include "src/history/BatteryHistoryChart.h"
 #include "src/history/BatteryHistoryStore.h"
 #include "src/rpc/RpcServer.h"
+#include "src/scripting/PluginUpdater.h"
 #include "util/AppSettings.h"
 #include "util/DeviceSettings.h"
 
@@ -960,6 +961,45 @@ void MainWindow::setupPages()
     addInfoRow(connectionsLayout, new QLabel(tr("Service status")), m_rpcStatusValue);
     settingsLayout->addWidget(connectionsGroup);
 
+    m_pluginsSectionLabel = makeSectionLabel(tr("Plugins"));
+    settingsLayout->addWidget(m_pluginsSectionLabel);
+    auto *pluginsGroup = makeInfoGroup();
+    auto *pluginsLayout = qobject_cast<QVBoxLayout *>(pluginsGroup->layout());
+    m_pluginUpdateRowTitle = new QLabel(tr("Official plugins"));
+    m_pluginUpdateButton = new QPushButton(tr("Update from GitHub"));
+    m_pluginUpdateButton->setCursor(Qt::PointingHandCursor);
+    addInfoRow(pluginsLayout, m_pluginUpdateRowTitle, m_pluginUpdateButton);
+    m_pluginUpdateHint = makeValueLabel();
+    m_pluginUpdateHint->setObjectName(QStringLiteral("rowValue"));
+    m_pluginUpdateHint->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    m_pluginUpdateHint->setContentsMargins(18, 8, 18, 12);
+    m_pluginUpdateHint->setText(tr("Downloads plugins from JKWTCN/BatteryMonitor. Matching local files are overwritten; restart to apply."));
+    m_pluginUpdateHint->setWordWrap(true);
+    pluginsLayout->addWidget(m_pluginUpdateHint);
+    settingsLayout->addWidget(pluginsGroup);
+    m_pluginUpdater = new PluginUpdater(this);
+    connect(m_pluginUpdateButton, &QPushButton::clicked, this, [this] {
+        m_pluginUpdateButton->setEnabled(false);
+        m_pluginUpdater->start();
+    });
+    connect(m_pluginUpdater, &PluginUpdater::progress, this, [this](int current, int total) {
+        m_pluginUpdateButton->setText(total == 0 ? tr("Checking GitHub...")
+                                                : tr("Downloading %1/%2...").arg(current).arg(total));
+    });
+    connect(m_pluginUpdater, &PluginUpdater::finished, this,
+            [this](bool success, int updated, const QString &error) {
+        m_pluginUpdateButton->setEnabled(true);
+        m_pluginUpdateButton->setText(tr("Update from GitHub"));
+        if (!success) {
+            QMessageBox::warning(this, tr("Plugin update"), error);
+        } else if (updated == 0) {
+            QMessageBox::information(this, tr("Plugin update"), tr("All official plugins are up to date."));
+        } else {
+            QMessageBox::information(this, tr("Plugin update"),
+                                     tr("Updated %1 plugin(s). Restart BatteryMonitor to apply the changes.").arg(updated));
+        }
+    });
+
     m_aboutSectionLabel = makeSectionLabel(tr("About"));
     settingsLayout->addWidget(m_aboutSectionLabel);
     auto *aboutGroup = makeInfoGroup();
@@ -1795,6 +1835,12 @@ void MainWindow::retranslateUi()
     if (m_historySectionLabel) m_historySectionLabel->setText(tr("Battery history"));
     if (m_generalSectionLabel) m_generalSectionLabel->setText(tr("General"));
     if (m_connectionsSectionLabel) m_connectionsSectionLabel->setText(tr("Connections"));
+    if (m_pluginsSectionLabel) m_pluginsSectionLabel->setText(tr("Plugins"));
+    if (m_pluginUpdateRowTitle) m_pluginUpdateRowTitle->setText(tr("Official plugins"));
+    if (m_pluginUpdateButton && !m_pluginUpdater->isRunning())
+        m_pluginUpdateButton->setText(tr("Update from GitHub"));
+    if (m_pluginUpdateHint)
+        m_pluginUpdateHint->setText(tr("Downloads plugins from JKWTCN/BatteryMonitor. Matching local files are overwritten; restart to apply."));
     if (m_aboutSectionLabel) m_aboutSectionLabel->setText(tr("About"));
     if (m_intervalRowTitle) m_intervalRowTitle->setText(tr("Refresh interval"));
     if (m_languageRowTitle) m_languageRowTitle->setText(tr("Language"));

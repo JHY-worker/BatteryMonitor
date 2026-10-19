@@ -166,6 +166,7 @@ bin/BatteryMonitor.exe
 对于通过 HID output/input report 或 feature report 查询电量的设备，可以使用 JS 插件新增
 支持，无需修改和重新编译 BatteryMonitor。程序启动时会递归扫描 exe 同级的 `plugins`
 目录；使用 CMake 构建时，仓库内的 `plugins` 目录会自动复制到输出目录。
+也可以在「设置 → 插件」中点击「从 GitHub 更新」获取官方最新插件，更新后重启生效。
 
 插件运行在受限的 QuickJS 沙箱中，不具备文件、网络或进程访问能力，但可以向匹配的 HID
 设备发送数据包，因此仍应只使用可信插件。

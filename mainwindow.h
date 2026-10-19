@@ -20,6 +20,7 @@ class BatteryManager;
 class BatteryHistoryChart;
 class BatteryHistoryStore;
 class RpcServer;
+class PluginUpdater;
 class QSystemTrayIcon;
 class QAction;
 class QCheckBox;
@@ -236,6 +237,12 @@ private:
     QSpinBox *m_airPodsRssiSpin = nullptr;
     QSpinBox *m_xiaomiBudsRssiSpin = nullptr;
     QComboBox *m_historyRetentionCombo = nullptr;
+
+    QLabel *m_pluginsSectionLabel = nullptr;
+    QLabel *m_pluginUpdateRowTitle = nullptr;
+    QLabel *m_pluginUpdateHint = nullptr;
+    QPushButton *m_pluginUpdateButton = nullptr;
+    PluginUpdater *m_pluginUpdater = nullptr;
 
     // —— 设置页 WebSocket RPC 行控件 ——
     QLabel *m_rpcRowTitle = nullptr;

@@ -21,7 +21,7 @@ set(APP_VERSION_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(APP_VERSION_HEADER "${APP_VERSION_GENERATED_DIR}/GeneratedAppVersion.h")
 set(APP_VERSION_RC "${APP_VERSION_GENERATED_DIR}/app_version.rc")
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets WebSockets Sql LinguistTools)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Network WebSockets Sql LinguistTools)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 qt_standard_project_setup(I18N_SOURCE_LANGUAGE en)
@@ -176,6 +176,7 @@ target_link_libraries(BatteryMonitor
     PRIVATE
         Qt::Core
         Qt::Widgets
+        Qt6::Network
         Qt6::WebSockets
         Qt6::Sql
 )
@@ -214,6 +215,8 @@ target_sources(BatteryMonitor PRIVATE
     src/scripting/JsPluginProvider.h
     src/scripting/JsPluginLoader.cpp
     src/scripting/JsPluginLoader.h
+    src/scripting/PluginUpdater.cpp
+    src/scripting/PluginUpdater.h
 )
 
 # —— quickjs-ng（src/scripting/ 的 JS 插件引擎）——
