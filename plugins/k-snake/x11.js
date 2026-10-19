@@ -1,3 +1,4 @@
+// @min-host-version: 1.4
 // K-snake X11 电量插件。
 //
 // 同时支持：

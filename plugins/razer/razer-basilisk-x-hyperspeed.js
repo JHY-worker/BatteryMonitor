@@ -1,3 +1,4 @@
+// @min-host-version: 1.4
 // Razer Basilisk X HyperSpeed(2.4G Dongle)电量插件。
 // 协议从 src/providers/hid/RazerHidProvider.cpp 移植:Razer 私有协议走
 // HID feature report(90 字节 payload + 1 字节 Report ID)。

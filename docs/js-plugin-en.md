@@ -35,10 +35,38 @@ therefore do not conflict.
 
 ## Plugin structure
 
+### Minimum host version
+
+New plugins should declare the minimum supported BatteryMonitor version on the
+**first non-empty line** of the file:
+
+```js
+// @min-host-version: 1.4
+```
+
+Use `major.minor` or `major.minor.build`, such as `1.4.261019`. Components are
+compared numerically, with an omitted build treated as zero; `1.10` is newer than
+`1.9`. When using a new host API, specify the first application version providing
+that API. This is not the plugin's own version number.
+
+The host checks the header before creating the JavaScript engine. If the host is
+too old, it disables the plugin and logs the required version, current version,
+and an upgrade hint. No module top-level code, exported functions, or HID operations
+are executed. Malformed declarations also disable the plugin. Legacy plugins
+without a declaration continue to load. Only numeric versions are supported, with
+no `v` prefix, ranges, or prerelease suffixes. A UTF-8 BOM and leading blank lines
+are allowed; the declaration must precede all other comments and code.
+
+This protection applies to hosts implementing this check. Previously released
+hosts without the check cannot automatically skip newer plugins.
+
+### Exported functions
+
 A plugin is a UTF-8 ES module. It must export `VendorId()`, `ProductId()`, and `GetBattery()`.
 `Name()` is optional.
 
 ```js
+// @min-host-version: 1.4
 export function Name()      { return "My Battery Device"; }
 export function VendorId()  { return 0x1234; }
 export function ProductId() { return [0x0001, 0x0002]; }

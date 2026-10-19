@@ -2,6 +2,11 @@
 
 #include "src/providers/hid/HidApiLock.h"
 #include "util/Logger.h"
+#include "GeneratedAppVersion.h"
+
+#include <QRegularExpression>
+#include <QString>
+#include <QVersionNumber>
 
 #include <algorithm>
 #include <chrono>
@@ -29,6 +34,50 @@ namespace
     constexpr int kMaxPauseMs = 1000;
     // 连续失败这么多轮后自动停用插件,避免每次轮询都刷错误日志。
     constexpr int kMaxConsecutiveFailures = 5;
+
+    // Static header metadata is checked before creating the JS engine, so even
+    // top-level code using a newer host API cannot run on an unsupported host.
+    bool checkMinimumHostVersion(const std::string &source, const std::string &id)
+    {
+        QString text = QString::fromUtf8(source.data(), static_cast<qsizetype>(source.size()));
+        if (text.startsWith(QChar(0xFEFF)))
+        {
+            text.remove(0, 1);
+        }
+        // The declaration must be the first non-empty line of the file.
+        const qsizetype start = text.indexOf(QRegularExpression(QStringLiteral("\\S")));
+        if (start < 0)
+        {
+            return true;
+        }
+        const qsizetype end = text.indexOf('\n', start);
+        const QString header = text.mid(start, end < 0 ? -1 : end - start).trimmed();
+        static const QRegularExpression marker(QStringLiteral("^//\\s*@min-host-version\\b"));
+        if (!marker.match(header).hasMatch())
+        {
+            return true; // Legacy plugin without a version declaration.
+        }
+        static const QRegularExpression declaration(
+            QStringLiteral("^//\\s*@min-host-version:[ \\t]*([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)[ \\t]*$"));
+        const auto match = declaration.match(header);
+        qsizetype suffix = 0;
+        const QString requiredText = match.captured(1);
+        const QVersionNumber required = QVersionNumber::fromString(requiredText, &suffix);
+        if (!match.hasMatch() || required.isNull() || suffix != requiredText.size())
+        {
+            LOG_ERR("plugin '" + id + "': invalid @min-host-version declaration; "
+                    "expected // @min-host-version: major.minor[.build]; plugin disabled");
+            return false;
+        }
+        const QVersionNumber current = QVersionNumber::fromString(QStringLiteral(APP_VERSION_STRING));
+        if (QVersionNumber::compare(current.normalized(), required.normalized()) < 0)
+        {
+            LOG_WARN("plugin '" + id + "' requires BatteryMonitor " + requiredText.toStdString()
+                     + " or newer (current " APP_VERSION_STRING "); plugin disabled; update BatteryMonitor");
+            return false;
+        }
+        return true;
+    }
 
     // —— UTF-8 ↔ 宽字符(核心层用 std::wstring,JS 字符串是 UTF-8)——
     std::wstring utf8ToWide(const std::string &s)
@@ -479,6 +528,11 @@ bool JsPluginProvider::ensureLoaded()
             return false;
         }
         m_source.assign(std::istreambuf_iterator<char>(in), {});
+    }
+
+    if (!checkMinimumHostVersion(m_source, m_id))
+    {
+        return false;
     }
 
     m_engine = std::make_unique<QuickjsEngine>();

@@ -39,10 +39,32 @@ plugins\razer\razer-basilisk-x-hyperspeed.js
 
 ## 插件结构
 
+### 最低宿主版本
+
+新插件应在文件的**首个非空行**声明最低支持的 BatteryMonitor 版本：
+
+```js
+// @min-host-version: 1.4
+```
+
+支持 `主版本.次版本` 或 `主版本.次版本.构建号`，例如 `1.4.261019`。
+比较时逐段按整数比较，省略的构建号视为 `0`，因此 `1.10` 高于 `1.9`。
+使用新增宿主 API 时，请将这里设为首次提供该 API 的程序版本；这不是插件自身的版本号。
+
+宿主在创建 JS 引擎之前读取声明：版本不足时停用插件并记录要求版本、当前版本和升级提示，
+不会执行模块顶层代码、导出函数或 HID 操作。声明格式错误时也停用；没有声明的旧插件
+继续按原方式加载。声明只允许版本数字，不支持 `v` 前缀、版本范围或预发布后缀。
+可使用 UTF-8 BOM 和前导空行，但声明必须放在其他注释和代码之前。
+
+此检查从支持该声明的宿主版本开始生效，无法使此前已发布且没有版本检查的程序自动跳过插件。
+
+### 导出函数
+
 插件是一个 UTF-8 编码的 ES module。它必须导出 `VendorId()`、`ProductId()` 和
 `GetBattery()`；`Name()` 可选。
 
 ```js
+// @min-host-version: 1.4
 export function Name()      { return "My Battery Device"; }
 export function VendorId()  { return 0x1234; }
 export function ProductId() { return [0x0001, 0x0002]; }

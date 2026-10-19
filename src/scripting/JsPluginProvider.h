@@ -13,8 +13,10 @@
 
 // JS 插件的电量提供者:一个 .js 文件 = 一个 provider(使用说明见 docs/js-plugin.md)。
 //
+// 文件首个非空行可声明 // @min-host-version: 1.4，宿主版本不足或声明非法
+// 时在执行任何 JS 代码前停用；没有声明的旧插件继续兼容。
 // 插件通过具名导出函数声明自己:
-//   Name() / VendorId() / ProductId()  —— 插件名与设备匹配表(必填)。
+//   Name() / VendorId() / ProductId()  —— 插件名(可选)与设备匹配表(必填)。
 //   GetBattery()                       —— 协议本体(必填),宿主对每台匹配且成功
 //                                          打开的设备每轮调用一次,返回电量对象
 //                                          {percentage | level, charging?, wired?}
