@@ -1,0 +1,94 @@
+
+name: Build BatteryMonitor 30min
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+
+      - name: Enable 30 minute refresh
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          function Patch($file, $old, $new) {
+            $path = Join-Path $PWD $file
+            $text = [IO.File]::ReadAllText($path)
+
+            if (-not $text.Contains($old)) {
+              throw "Source code changed: $file"
+            }
+
+            $text = $text.Replace($old, $new)
+            $utf8 = [Text.UTF8Encoding]::new($false)
+            [IO.File]::WriteAllText($path, $text, $utf8)
+          }
+
+          Patch 'mainwindow.cpp' `
+            'case 3:  return 60000;' `
+            "case 3:  return 60000;`n    case 4:  return 1800000;"
+
+          Patch 'mainwindow.cpp' `
+            'case 60000: return 3;' `
+            "case 60000: return 3;`n    case 1800000: return 4;"
+
+          Patch 'mainwindow.cpp' `
+            'm_intervalCombo->addItem(tr("60 seconds"));' `
+            "m_intervalCombo->addItem(tr(`"60 seconds`"));`n        m_intervalCombo->addItem(QStringLiteral(`"30 分钟`"));"
+
+          Patch 'src/core/BatteryManager.cpp' `
+            'm_timer->setInterval(10000);' `
+            'm_timer->setInterval(AppSettings::refreshInterval());'
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: qtwebsockets
+          cache: true
+
+      - name: Compile Windows program
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          if ($LASTEXITCODE -ne 0) { throw "CMake failed" }
+
+          cmake --build build --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+
+      - name: Package portable app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Get-ChildItem bin -Filter BatteryMonitor.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "EXE not found" }
+
+          New-Item portable -ItemType Directory -Force | Out-Null
+          Copy-Item $exe.FullName portable/
+
+          Copy-Item external/hidapi/hidapi.dll portable/
+
+          if (Test-Path plugins) {
+            Copy-Item plugins portable/plugins -Recurse
+          }
+
+          & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --release --compiler-runtime --no-translations portable/BatteryMonitor.exe
+          if ($LASTEXITCODE -ne 0) { throw "Packaging failed" }
+
+      - name: Upload portable version
+        uses: actions/upload-artifact@v4
+        with:
+          name: BatteryMonitor-30min-Windows
+          path: portable/
